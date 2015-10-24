@@ -24,7 +24,8 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, Gdk, GLib
 from addFeed import AddFeed
 from configManager import ConfigManager
-from newsBox import NewsBox
+from singleNews import SingleNews
+from splitNews import SplitNews
 
 class Trough(Gtk.Window):
 
@@ -35,9 +36,17 @@ class Trough(Gtk.Window):
         self.config = ConfigManager()
         self.config.load_config()
         self.header_bar = self.create_header()
-        self.newsBox = NewsBox(self.config)
-        self.newsBox.populate()
-        self.add(self.newsBox.scroll_window)
+
+        # Split headlines/news view
+        split = True  # TODO: will be in settings
+        if split:
+            self.splitBox = SplitNews(self.config, self.gatherer)
+            self.splitBox.populate()
+            self.add(self.splitBox.display)
+        else:
+            self.newsBox = SingleNews(self.config, self.gatherer)
+            self.newsBox.populate()
+            self.add(self.newsBox.scroll_window)
 
     def set_window_icon(self):
         theme = Gtk.IconTheme.get_default()
@@ -104,6 +113,7 @@ class Trough(Gtk.Window):
     def on_refresh_clicked(self, widget):
         self.newsBox.refresh()
 
+    #TODO: Abstract newsBox calls to allow for switch between split/single
     def on_key_press(self, widget, event):
         key = Gdk.keyval_name(event.keyval)
         if key == "F5":

@@ -27,4 +27,4 @@ class Item:
         self.link = link
         self.image = None  # optional
         self.article = None  # from scraping
-        self.attempted_scrape = False
+

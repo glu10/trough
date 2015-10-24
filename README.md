@@ -7,7 +7,8 @@ A GTK+ RSS news reader (currently in the early stages of development)
 * Python 3.x+
 * [Feedparser](https://pypi.python.org/pypi/feedparser)
 * [BeautifulSoup 4](http://www.crummy.com/software/BeautifulSoup/)
-* [PyGObject](https://wiki.gnome.org/action/show/Projects/PyGObject?action=show&redirect=PyGObject)
+* [PyGObject](https://wiki.gnome.org/action/show/Projects/PyGObject)
+* [Requests] (http://docs.python-requests.org/en/latest/)
 
 ## Goals
 * Simple, customizable interface.

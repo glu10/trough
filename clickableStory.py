@@ -21,19 +21,17 @@
 from gi.repository import Gtk, Gdk, Pango
 
 #TODO: Rename this class later to have a common terminology, story/article/item are getting mixed up
-class Story:
+class ClickableStory:
     """ Content of an RSS entry. Possibly supplemented with scraped information. Configurable appearance. """
-    def __init__(self, item, news_box):
-        self.newsBox = news_box  # Parent newsBox this story belongs to
-        self.gatherer = self.newsBox.gatherer
+    def __init__(self, item, parent):
+        self.parent = parent  # Parent news view this story belongs to
         self.item = item
 
         self.label = self.setup_label(item)
         self.title = self.setup_title(item)
-        self.story = ""  # Will be populated once the headline is clicked
 
         self.headline_box = self.setup_headline_box(self.label, self.title)
-        self.clickable_headline, self.reveal = self.clickable_headline(self.headline_box, self.story)
+        self.clickable_headline, self.reveal = self.clickable_headline(self.headline_box)
 
     def setup_label(self, item):
         label = Gtk.Label()
@@ -47,41 +45,6 @@ class Story:
         title.set_markup("<span size=\"larger\" weight=\"bold\" background=\"#FFFFFF\" >" + item.title + "</span>")
         return title
 
-    # TODO: Change story from a simple label to a more complex multi-line text + pictures
-    def setup_story(self, item):
-        textview = Gtk.TextView()
-        textview.set_margin_right(12)
-        textview.set_margin_left(10)
-        textview.set_editable(False)
-        textview.set_cursor_visible(False)
-        textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-        textbuffer = textview.get_buffer()
-
-        def pos():  # Convenience function for readability
-            return textbuffer.get_end_iter()
-
-        bold = textbuffer.create_tag("title", weight=Pango.Weight.BOLD)
-        textbuffer.insert_with_tags(pos(), "Description: ", bold)
-        textbuffer.insert(pos(), item.description)
-
-        if not item.article and not item.attempted_scrape:
-            item.article = self.gatherer.get_article(item.link)
-            if item.article:
-                textbuffer.insert_with_tags(pos(), "\n\nArticle: ", bold)
-                paragraph = textbuffer.create_tag("paragraph", pixels_below_lines=5, pixels_above_lines=5)
-                for p in item.article:
-                    textbuffer.insert_with_tags(pos(), p + "\n", paragraph)
-
-        if item.link:
-            center = textbuffer.create_tag("center", justification=Gtk.Justification.CENTER, weight=Pango.Weight.BOLD)
-            textbuffer.insert_with_tags(pos(), ' ', center)
-            anchor = textbuffer.create_child_anchor(pos())
-            link = Gtk.LinkButton.new_with_label(item.link, "Read in Browser")
-            link.set_relief(Gtk.ReliefStyle.NONE)
-            textview.add_child_at_anchor(link, anchor)
-
-        return textview
-
     def setup_headline_box(self, label, title):
         headline = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20)
         headline.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(255,255,255,1))
@@ -89,7 +52,7 @@ class Story:
         headline.pack_start(title, False, True, 0)
         return headline
 
-    def clickable_headline(self, headline_box, story):
+    def clickable_headline(self, headline_box):
         event = Gtk.EventBox()
         event.add(headline_box)
         event.set_events(Gdk.EventMask.BUTTON_PRESS_MASK)
@@ -115,15 +78,15 @@ class Story:
 
         # Stylistic choice: ensures that only one story is ever expanded
         if expansion:
-            lr = self.newsBox.last_reveal
+            lr = self.parent.last_reveal
             if lr is None:
-                self.newsBox.last_reveal = self.reveal
+                self.parent.last_reveal = self.reveal
             elif lr is not self.reveal and lr.get_reveal_child():
-                    self.newsBox.last_reveal.set_reveal_child(False)
-                    self.newsBox.last_reveal = self.reveal
-            self.newsBox.last_story_position = self.newsBox.stories.index(self)  # Update last position to current pos
+                    self.parent.last_reveal.set_reveal_child(False)
+                    self.parent.last_reveal = self.reveal
+            self.parent.last_story_position = self.parent.stories.index(self)  # Update last position to current pos
 
         else:
-            self.newsBox.last_reveal = None
+            self.parent.last_reveal = None
 
         self.reveal.set_reveal_child(expansion)

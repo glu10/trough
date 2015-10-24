@@ -25,8 +25,13 @@ from item import Item
 
 class Gatherer:
 
+    def __init__(self):
+        self.collected_items = None
+
+    #TODO: Error checking, temp variable collection used to mitigate blowing up current list.
     def collect(self, feeds):
         collection = list()
+
         for label, uri in feeds.items():
             content = feedparser.parse(uri)
             for entry in content['entries']:
@@ -34,8 +39,20 @@ class Gatherer:
                 #if 'image' in entry.keys():
                  #   self.fetch_image(item, entry['image'])
                 collection.append(item)
-        return collection
 
-    def get_article(self, link):
+        if collection is not None:
+            self.collected_items = collection
+
+        return self.collected_items
+
+    @staticmethod
+    def get_article(link):
         article_html = requests.get(link).content
         return select_rule(link, article_html)
+
+    @staticmethod
+    def get_and_set_article(item):
+        if not item.article:  # Don't bother if the article has already been set
+            article_html = requests.get(item.link).content
+            item.article = select_rule(item.link, article_html)
+        return item.article

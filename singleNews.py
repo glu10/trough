@@ -18,17 +18,17 @@
     The full project can be found at: https://github.com/glu10/trough
 """
 
-from gatherer import Gatherer
 from gi.repository import Gtk, Gio, Gdk
-from story import Story
-import webbrowser
+from newsView import NewsView
+from clickableStory import ClickableStory
+from webbrowser import open_new_tab
 
-class NewsBox:
+class SingleNews(NewsView):
     """ GUI component where RSS headlines appear for user selection. Headlines can be expanded to reveal a story."""
-    def __init__(self, config):
+    def __init__(self, config, gatherer):
         self.config = config
+        self.gatherer = gatherer
         self.stories = list()
-        self.gatherer = Gatherer()
         self.last_reveal = None
         self.last_story_position = -1
         self.top_vbox, self.scroll_window = self.create_display_window()
@@ -59,7 +59,7 @@ class NewsBox:
         self.last_story_position = -1
         self.last_reveal = None
         self.stories = list()
-        self.populate()
+        self.populate(self.gatherer, self.config.feeds)
         self.scroll_window.show_all()
 
     def scroll(self, up):
@@ -71,12 +71,12 @@ class NewsBox:
 
     def open_link(self):
         if 0 <= self.last_story_position < len(self.stories):
-            webbrowser.open_new_tab(self.stories[self.last_story_position].item.link)
+            open_new_tab(self.stories[self.last_story_position].item.link)
 
-    def populate(self):
-        news_list = self.gatherer.collect(self.config.feeds)
+    def populate(self, gatherer, feeds):
+        news_list = gatherer.collect(feeds)
 
         for item in news_list:
-            story = Story(item, self)
+            story = ClickableStory(item, self)
             self.stories.append(story)
             self.top_vbox.pack_start(story.clickable_headline, False, True, 0)

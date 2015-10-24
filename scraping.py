@@ -110,9 +110,3 @@ rules = {'abcnews.go.com': abc_news,
          'usatoday.com': usa_today,
          'washingtonpost.com': washington_post
          }
-
-
-
-
-
-
