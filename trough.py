@@ -16,7 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see {http://www.gnu.org/licenses/}.
 
-    The full project can be found at: https://github.com/glu10/trough
+    Trough homepage: https://github.com/glu10/trough
 """
 
 import gi
@@ -26,27 +26,34 @@ from addFeed import AddFeed
 from configManager import ConfigManager
 from singleNews import SingleNews
 from splitNews import SplitNews
+from gatherer import Gatherer
 
 class Trough(Gtk.Window):
 
     def __init__(self):
         Gtk.Window.__init__(self, title="Trough")
-        self.set_default_size(400, 600)
+        self.set_default_size(1000, 800)
         self.set_window_icon()
         self.config = ConfigManager()
         self.config.load_config()
         self.header_bar = self.create_header()
+        
+        #TODO: Should do the fetch in another thread or coniditionally if batch fetch isn't desired
+        self.gatherer = Gatherer()
+        self.gatherer.collect(self.config.feeds)
 
         # Split headlines/news view
-        split = True  # TODO: will be in settings
-        if split:
+        self.split = True  # TODO: will be in settings
+        if self.split:
             self.splitBox = SplitNews(self.config, self.gatherer)
-            self.splitBox.populate()
-            self.add(self.splitBox.display)
+            self.add(self.splitBox.create_display())
+            self.splitBox.populate(self.gatherer.collected_items)
         else:
-            self.newsBox = SingleNews(self.config, self.gatherer)
-            self.newsBox.populate()
-            self.add(self.newsBox.scroll_window)
+            self.singleBox = SingleNews(self.config)
+            self.add(self.singleBox.create_display())
+            self.singleBox.populate(self.gatherer.collected_items)
+
+        self.show_all()
 
     def set_window_icon(self):
         theme = Gtk.IconTheme.get_default()
@@ -55,6 +62,12 @@ class Trough(Gtk.Window):
             self.set_icon(icon)
         except GLib.Gerror:
             pass
+
+    def current_view(self):
+        if self.split:
+            return self.splitBox
+        else:
+            return self.singleBox
 
     def create_header(self):
         header_bar = Gtk.HeaderBar()
@@ -111,7 +124,14 @@ class Trough(Gtk.Window):
         return None
 
     def on_refresh_clicked(self, widget):
-        self.newsBox.refresh()
+        self.current_view().refresh()
+
+    @staticmethod
+    def do_scroll(widget, scroll):
+        try:
+            widget.do_scroll_child(widget, scroll, False)
+        except AttributeError:
+            pass
 
     #TODO: Abstract newsBox calls to allow for switch between split/single
     def on_key_press(self, widget, event):
@@ -119,18 +139,18 @@ class Trough(Gtk.Window):
         if key == "F5":
             self.on_refresh_clicked(widget)
         elif key == "Left":
-            self.newsBox.change_position(-1)
+            self.current_view().change_position(-1)
         elif key == "Right":
-            self.newsBox.change_position(1)
+            self.current_view().change_position(1)
         elif key == "Up":
-            self.newsBox.scroll(True)
+            self.do_scroll(widget, Gtk.ScrollType.STEP_BACKWARD)
         elif key == "Down":
-            self.newsBox.scroll(False)
+            self.do_scroll(widget, Gtk.ScrollType.STEP_FORWARD)
         elif key == "Return":
             if event.state & Gdk.ModifierType.CONTROL_MASK:
-                self.newsBox.open_link()
+                self.current_view().open_link()
             else:
-                self.newsBox.change_position(0)
+                self.current_view().change_position(0)
         else:
             pass
 

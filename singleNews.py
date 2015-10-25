@@ -15,23 +15,21 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see {http://www.gnu.org/licenses/}.
 
-    The full project can be found at: https://github.com/glu10/trough
+    Trough homepage: https://github.com/glu10/trough
 """
 
 from gi.repository import Gtk, Gio, Gdk
 from newsView import NewsView
 from clickableStory import ClickableStory
-from webbrowser import open_new_tab
 
 class SingleNews(NewsView):
     """ GUI component where RSS headlines appear for user selection. Headlines can be expanded to reveal a story."""
-    def __init__(self, config, gatherer):
+    def __init__(self, config):
         self.config = config
-        self.gatherer = gatherer
         self.stories = list()
         self.last_reveal = None
         self.last_story_position = -1
-        self.top_vbox, self.scroll_window = self.create_display_window()
+        self.top_vbox, self.scroll_window = None
 
     def create_display_window(self):
         top_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -41,8 +39,8 @@ class SingleNews(NewsView):
         scroll_window = Gtk.ScrolledWindow()
         scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
         scroll_window.add(top_vbox)
-
-        return top_vbox, scroll_window
+        self.top_vbox, self.scroll_window = top_vbox, scroll_window
+        return top_vbox
 
     def change_position(self, delta):
         """ Up/Down arrow key navigation among headlines"""
@@ -62,21 +60,22 @@ class SingleNews(NewsView):
         self.populate(self.gatherer, self.config.feeds)
         self.scroll_window.show_all()
 
+    def open_link(self):
+        if 0 <= self.last_story_position < len(self.stories):
+            open_new_tab(self.stories[self.last_story_position].item.link)
+
+    def populate(self, items):
+        for item in items:
+            story = ClickableStory(item, self)
+            self.stories.append(story)
+            self.top_vbox.pack_start(story.clickable_headline, False, True, 0)
+
+"""
+Possibly abstracted away.
     def scroll(self, up):
         if up:
             step = Gtk.ScrollType.STEP_BACKWARD
         else:
             step = Gtk.ScrollType.STEP_FORWARD
         self.scroll_window.do_scroll_child(self.scroll_window, step, False)
-
-    def open_link(self):
-        if 0 <= self.last_story_position < len(self.stories):
-            open_new_tab(self.stories[self.last_story_position].item.link)
-
-    def populate(self, gatherer, feeds):
-        news_list = gatherer.collect(feeds)
-
-        for item in news_list:
-            story = ClickableStory(item, self)
-            self.stories.append(story)
-            self.top_vbox.pack_start(story.clickable_headline, False, True, 0)
+"""

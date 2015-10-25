@@ -15,10 +15,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see {http://www.gnu.org/licenses/}.
 
-    The full project can be found at: https://github.com/glu10/trough
+    Trough homepage: https://github.com/glu10/trough
 """
 
 from gi.repository import Gtk, Gdk, Pango
+from textFormat import TextFormat
 
 #TODO: Rename this class later to have a common terminology, story/article/item are getting mixed up
 class ClickableStory:
@@ -71,7 +72,7 @@ class ClickableStory:
     def toggle_show_story(self, widget, event):
 
         if self.reveal.get_child() is None:  # Is this the first time this news item has been clicked?
-            self.reveal.add(self.setup_story(self.item))  # Set up the article text
+            self.reveal.add(TextFormat.full_story(self.item))  # Set up the article text
             self.clickable_headline.show_all()
 
         expansion = not self.reveal.get_reveal_child()  # Is the story going to be revealed?

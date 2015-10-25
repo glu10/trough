@@ -15,23 +15,24 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see {http://www.gnu.org/licenses/}.
 
-    The full project can be found at: https://github.com/glu10/trough
+    Trough homepage: https://github.com/glu10/trough
 """
 
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
+from webbrowser import open_new_tab
 
 class NewsView(metaclass=ABCMeta):
 
     @abstractmethod
     def create_display(self):
         """
-        Create the widgets related to this display
+        Create the widgets related to this display and returns the top-level container.
         """
 
     @abstractmethod
     def destroy_display(self):
         """
-        Destroy the widgets related to this display
+        Destroy the widgets related to this display.
         """
 
     @abstractmethod
@@ -41,26 +42,20 @@ class NewsView(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def open_link(self):
+    def open_link(self, url=""):
         """
         Open the currently active story URL, if one exists, in a browser.
         """
+        open_new_tab(url)
 
     @abstractmethod
-    def populate(self, gatherer, feeds):
+    def populate(self, items):
         """
         Fill this view with the information derived/provided from the RSS feeds.
         """
-        return gatherer.collect(feeds)
 
     @abstractmethod
     def refresh(self):
         """
         Clear the current contents of the view and populate them again.
-        """
-
-    @abstractmethod
-    def scroll(self, up):
-        """
-        Scroll an active display window.
         """

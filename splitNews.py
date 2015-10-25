@@ -15,65 +15,99 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see {http://www.gnu.org/licenses/}.
 
-    The full project can be found at: https://github.com/glu10/trough
+    Trough homepage: https://github.com/glu10/trough
 """
 
-from gatherer import Gatherer
 from gi.repository import Gtk, Gio, Gdk
+from gi.repository import Pango
 from newsView import NewsView
-from clickableStory import ClickableStory
-import webbrowser
+from textFormat import TextFormat
 
 class SplitNews(NewsView):
     """ GUI component where headlines and story contents are split apart """
     def __init__(self, config, gatherer):
         self.config = config
         self.gatherer = gatherer
-
         self.headlines = list()
         self.buffers = list()
-
-        self.last_reveal = None
-        self.last_story_position = -1
-        self.top_hbox, self.headline_box, self.text_box = self.create_display()
+        self.headline_scroll, self.headline_store = None, None
+        self.treeview = None
+        self.top_pane = None
+        self.text_scroll = None
 
     def create_display(self):
-        top_hbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        top_hbox.margin_end = 30
+        self.top_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
 
-        #TODO: Left list box
+        self.headline_scroll = Gtk.ScrolledWindow()
+        self.headline_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
+        self.headline_store = Gtk.ListStore(str, str, int)
+        self.headline_scroll.set_size_request(100, 100)
+        self.treeview = Gtk.TreeView(model=self.headline_store)
 
-        scroll_window = Gtk.ScrolledWindow()
-        scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
-        scroll_window.add(top_hbox)
+        self.headline_scroll.add(self.treeview)
 
-        return top_hbox, scroll_window
+        self.text_scroll = Gtk.ScrolledWindow()
+        self.text_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
+        self.text_view = Gtk.TextView()
+        tb = self.text_view.get_buffer()
+
+        self.text_view.set_size_request(200,200)
+        tb.insert(tb.get_end_iter(), " "*200)
+        self.text_view.set_editable(False)
+        self.text_view.set_cursor_visible(False)
+
+        self.text_scroll.add(self.text_view)
+
+        self.top_pane.pack1(self.headline_scroll, resize=True, shrink=False)
+        self.top_pane.pack2(self.text_scroll, resize=True, shrink=False)
+        self.top_pane.show_all()
+        return self.top_pane
 
     def destroy_display(self):
-        for child in self.top_hbox:
+        for child in self.top_pane:
             child.destroy()
-        self.top_hbox.destroy()
+        self.top_pane.destroy()
 
     def change_position(self, delta):
-        """ Up/Down arrow key navigation among headlines"""
-        new_pos = self.last_story_position + delta
-
-       # if 0 <= new_pos < len(self.stories):
-           # self.headlines[new_pos]
-           # self.last_headline
+        """ Switches keyboard focus between left and right pane """
+        if delta < 0:
+            self.treeview.grab_focus()
+        else:
+            self.text_view.grab_focus()
 
     def refresh(self):
+        self.headline_store.clear()
+        self.text_scroll.child.destroy()
+
+    def open_link(self, url=""):
+        if not url:
+            pass
+            #super.open_link(url=url)
+
+    def populate(self, items):
+
+        i = 0
+        for item in items:
+            print(item.label, item.title)
+            self.headline_store.append(list([item.label, item.title, i]))
+            i += 1
+
+        columns = ('Label', 'Headline')
+        for i in range(len(columns)):
+            cell = Gtk.CellRendererText()
+            if i == 0:
+                cell.props.weight_set = True
+                cell.props.weight = Pango.Weight.BOLD
+            cell.set_visible(True)
+            col = Gtk.TreeViewColumn(columns[i], cell, text=i)
+
+            self.treeview.append_column(col)
+        self.treeview.get_selection().connect("changed", self.show_new_article)
+
+    def show_new_article(self, selection):
+        (model, iter) = selection.get_selected()
+        selected_item = self.gatherer.collected_items[model[iter][2]]
+        TextFormat.full_story(selected_item, self.text_view)
 
 
-    def scroll(self, up):
-        if up:
-            step = Gtk.ScrollType.STEP_BACKWARD
-        else:
-            step = Gtk.ScrollType.STEP_FORWARD
-        self.text_box.do_scroll_child(self.text_box, step, False)
 
-    def open_link(self):
-
-
-    def populate(self, gatherer, feed):
-        news_list = self.gatherer.collect(self.config.feeds)

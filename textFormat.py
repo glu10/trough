@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see {http://www.gnu.org/licenses/}.
 
-    The full project can be found at: https://github.com/glu10/trough
+    Trough homepage: https://github.com/glu10/trough
 """
 
 from gi.repository import Gtk, Gdk, Pango
@@ -26,48 +26,53 @@ class TextFormat:
     Used for the uniform formatting of text between views
     """
 
-    def __init__(self, config):
-        self.config = config
+    @staticmethod
+    def full_story(item, textview=None): # TODO: double check default value gotcha
+        if textview is None:
+            text_view = Gtk.TextView()
+        else:
+            text_view = textview
 
-    def full_story(self, item):
-        text_view = Gtk.TextView()
         text_view.set_margin_right(12)
         text_view.set_margin_left(10)
         text_view.set_editable(False)
         text_view.set_cursor_visible(False)
         text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-        text_buffer = text_view.get_buffer()
-        
-        self.headline(item.title, text_buffer)
-        self.RSS_description(item.description, text_buffer)
-        self.scraped_story(item, text_buffer)
-        self.link_button(item.link, text_buffer, text_view)
+        text_buffer = Gtk.TextBuffer()
+        TextFormat.headline(item.title, text_buffer)
+        TextFormat.rss_description(item.description, text_buffer)
+        TextFormat.scraped_story(item, text_buffer)
+        TextFormat.link_button(item.link, text_buffer, text_view)
+        text_view.set_buffer(text_buffer)
 
         return text_view
 
-    def headline(self, headline, text_buffer):
-        bold = text_buffer.create_tag("headline", weight=Pango.Weight.BOLD)
-        text_buffer.insert_with_tags(self.__pos(text_buffer), "Title: ", bold)
-        text_buffer.insert(self.__pos(text_buffer), headline)
+    @staticmethod
+    def headline(headline, text_buffer):
+        center = text_buffer.create_tag("center", justification=Gtk.Justification.CENTER, weight=Pango.Weight.BOLD)
+        text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), headline, center)
+        #text_buffer.insert(TextFormat.__pos(text_buffer), headline)
 
-    def scraped_story(self, item, text_buffer):
+    @staticmethod
+    def scraped_story(item, text_buffer):
+        text_buffer.insert(TextFormat.__pos(text_buffer), "\n\n")
         if Gatherer.get_and_set_article(item):
-            text_buffer.insert_with_tags(self.__pos(text_buffer), "\n\nArticle: ", bold)
             paragraph = text_buffer.create_tag("paragraph", pixels_below_lines=5, pixels_above_lines=5)
             for p in item.article:
-                text_buffer.insert_with_tags(self.__pos(text_buffer), p + "\n", paragraph)
+                text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), p + "\n", paragraph)
 
-    def RSS_description(self, description, text_buffer):
+    @staticmethod
+    def rss_description(description, text_buffer):
         if description:
-            bold = text_buffer.create_tag("description", weight=Pango.Weight.BOLD)
-            text_buffer.insert_with_tags(self.__pos(text_buffer), "\n\nDescription: ", bold)
-            text_buffer.insert(self.__pos(text_buffer), description)
+            center = text_buffer.create_tag("description", justification=Gtk.Justification.CENTER)
+            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), "\n\n" + description, center)
 
-    def link_button(self, link, text_buffer, text_view):
+    @staticmethod
+    def link_button(link, text_buffer, text_view):
         if link:
-            center = text_buffer.create_tag("center", justification=Gtk.Justification.CENTER, weight=Pango.Weight.BOLD)
-            text_buffer.insert_with_tags(self.__pos(text_buffer), ' ', center)
-            anchor = text_buffer.create_child_anchor(self.__pos(text_buffer))
+            centerbold = text_buffer.create_tag("linkbutton", justification=Gtk.Justification.CENTER, weight=Pango.Weight.BOLD)
+            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), ' ', centerbold)
+            anchor = text_buffer.create_child_anchor(TextFormat.__pos(text_buffer))
             button = Gtk.LinkButton.new_with_label(link, "Read in Browser")
             button.set_relief(Gtk.ReliefStyle.NONE)
             text_view.add_child_at_anchor(button, anchor)
