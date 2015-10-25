@@ -35,6 +35,7 @@ class SplitNews(NewsView):
         self.top_pane = None
         self.text_scroll = None
 
+
     def create_display(self):
         self.top_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
 
