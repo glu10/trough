@@ -18,9 +18,11 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-from gi.repository import Gtk, Gio, Gdk
+from gi.repository import Gtk, Gdk
 from newsView import NewsView
 from clickableStory import ClickableStory
+
+#TODO: Factor out the stories list, it's unnecessary
 
 class SingleNews(NewsView):
     """ GUI component where RSS headlines appear for user selection. Headlines can be expanded to reveal a story."""
@@ -29,7 +31,7 @@ class SingleNews(NewsView):
         self.stories = list()
         self.last_reveal = None
         self.last_story_position = -1
-        self.top_vbox, self.scroll_window = None
+        self.top_vbox, self.scroll_window = self.create_display_window()
 
     def create_display_window(self):
         top_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -39,8 +41,10 @@ class SingleNews(NewsView):
         scroll_window = Gtk.ScrolledWindow()
         scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
         scroll_window.add(top_vbox)
-        self.top_vbox, self.scroll_window = top_vbox, scroll_window
-        return top_vbox
+        return top_vbox, scroll_window
+
+    def top_level(self):
+        return self.top_vbox
 
     def change_position(self, delta):
         """ Up/Down arrow key navigation among headlines"""
@@ -50,32 +54,22 @@ class SingleNews(NewsView):
             self.stories[new_pos].toggle_show_story(None, None)
             self.last_story_position = new_pos
 
-    def refresh(self):
+    def refresh(self, items):
         for vbox in self.top_vbox.get_children():
             vbox.destroy()  # Clean out old headlines
 
         self.last_story_position = -1
         self.last_reveal = None
         self.stories = list()
-        self.populate(self.gatherer, self.config.feeds)
+        self.populate(items)
         self.scroll_window.show_all()
 
-    def open_link(self):
+    def get_then_open_link(self, gatherer):
         if 0 <= self.last_story_position < len(self.stories):
-            open_new_tab(self.stories[self.last_story_position].item.link)
+            super().open_link(self.stories[self.last_story_position].item.link)
 
     def populate(self, items):
         for item in items:
             story = ClickableStory(item, self)
             self.stories.append(story)
             self.top_vbox.pack_start(story.clickable_headline, False, True, 0)
-
-"""
-Possibly abstracted away.
-    def scroll(self, up):
-        if up:
-            step = Gtk.ScrollType.STEP_BACKWARD
-        else:
-            step = Gtk.ScrollType.STEP_FORWARD
-        self.scroll_window.do_scroll_child(self.scroll_window, step, False)
-"""

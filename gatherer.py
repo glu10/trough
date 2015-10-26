@@ -25,14 +25,21 @@ from item import Item
 
 class Gatherer:
 
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
         self.collected_items = None
 
+    def item(self, index):
+        if self.collected_items and 0 <= index <= len(self.collected_items):
+            return self.collected_items[index]
+        else:
+            return None
+
     #TODO: Error checking, temp variable collection used to mitigate blowing up current list.
-    def collect(self, feeds):
+    def collect(self):
         collection = list()
 
-        for label, uri in feeds.items():
+        for label, uri in self.config.feeds.items():
             content = feedparser.parse(uri)
             for entry in content['entries']:
                 item = Item(label, entry['title'], entry['description'], entry['link'])

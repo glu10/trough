@@ -18,7 +18,7 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-from gi.repository import Gtk, Gio, Gdk
+from gi.repository import Gtk
 from gi.repository import Pango
 from newsView import NewsView
 from textFormat import TextFormat
@@ -28,70 +28,22 @@ class SplitNews(NewsView):
     def __init__(self, config, gatherer):
         self.config = config
         self.gatherer = gatherer
-        self.headlines = list()
-        self.buffers = list()
-        self.headline_scroll, self.headline_store = None, None
-        self.treeview = None
-        self.top_pane = None
-        self.text_scroll = None
+        self.last_item_index = -1
 
-
-    def create_display(self):
+        # GUI components
         self.top_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
 
-        self.headline_scroll = Gtk.ScrolledWindow()
-        self.headline_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
         self.headline_store = Gtk.ListStore(str, str, int)
-        self.headline_scroll.set_size_request(100, 100)
-        self.treeview = Gtk.TreeView(model=self.headline_store)
+        self.tree_view = self.create_tree_view(self.headline_store)
+        self.headline_scroll = self.create_headline_box(self.tree_view)
+        self.text_scroll, self.text_view = self.create_text_box()
 
-        self.headline_scroll.add(self.treeview)
+        self.top_pane.pack1(self.headline_scroll, resize=True, shrink=False)  # Left
+        self.top_pane.pack2(self.text_scroll, resize=True, shrink=False)  # Right
 
-        self.text_scroll = Gtk.ScrolledWindow()
-        self.text_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
-        self.text_view = Gtk.TextView()
-        tb = self.text_view.get_buffer()
-
-        self.text_view.set_size_request(200,200)
-        tb.insert(tb.get_end_iter(), " "*200)
-        self.text_view.set_editable(False)
-        self.text_view.set_cursor_visible(False)
-
-        self.text_scroll.add(self.text_view)
-
-        self.top_pane.pack1(self.headline_scroll, resize=True, shrink=False)
-        self.top_pane.pack2(self.text_scroll, resize=True, shrink=False)
-        self.top_pane.show_all()
-        return self.top_pane
-
-    def destroy_display(self):
-        for child in self.top_pane:
-            child.destroy()
-        self.top_pane.destroy()
-
-    def change_position(self, delta):
-        """ Switches keyboard focus between left and right pane """
-        if delta < 0:
-            self.treeview.grab_focus()
-        else:
-            self.text_view.grab_focus()
-
-    def refresh(self):
-        self.headline_store.clear()
-        self.text_scroll.child.destroy()
-
-    def open_link(self, url=""):
-        if not url:
-            pass
-            #super.open_link(url=url)
-
-    def populate(self, items):
-
-        i = 0
-        for item in items:
-            print(item.label, item.title)
-            self.headline_store.append(list([item.label, item.title, i]))
-            i += 1
+    def create_tree_view(self, headline_store):
+        tree_view = Gtk.TreeView(model=headline_store)
+        tree_view.get_selection().connect("changed", self.show_new_article)
 
         columns = ('Label', 'Headline')
         for i in range(len(columns)):
@@ -99,16 +51,63 @@ class SplitNews(NewsView):
             if i == 0:
                 cell.props.weight_set = True
                 cell.props.weight = Pango.Weight.BOLD
-            cell.set_visible(True)
             col = Gtk.TreeViewColumn(columns[i], cell, text=i)
+            tree_view.append_column(col)
+        return tree_view
 
-            self.treeview.append_column(col)
-        self.treeview.get_selection().connect("changed", self.show_new_article)
+    @staticmethod
+    def create_headline_box(tree_view):
+        headline_scroll = Gtk.ScrolledWindow()
+        headline_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
+        headline_scroll.set_size_request(100, 100)
+        headline_scroll.add(tree_view)
+        return headline_scroll
+
+    @staticmethod
+    def create_text_box():
+        text_scroll = Gtk.ScrolledWindow()
+        text_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
+        text_view = Gtk.TextView()
+        text_view.set_size_request(200,200)
+        text_view.set_editable(False)
+        text_view.set_cursor_visible(False)
+        tb = text_view.get_buffer()
+        tb.insert(tb.get_end_iter(), " "*200)  # Placeholder
+        text_scroll.add(text_view)
+        return text_scroll, text_view
+
+    def destroy_display(self):
+        for child in self.top_pane:
+            child.destroy()
+        self.top_pane.destroy()
+
+    def top_level(self):
+        return self.top_pane
+
+    def change_position(self, delta):
+        """ Switches keyboard focus between left and right pane """
+        if delta < 0:
+            self.tree_view.grab_focus()
+        else:
+            self.text_view.grab_focus()
+
+    def refresh(self, items):
+        self.headline_store.clear()
+        self.populate(items)
+
+    def get_then_open_link(self, gatherer):
+        active = gatherer.item(self.last_item_index)
+        if active:
+            super().open_link(active.link)
+
+    def populate(self, items):
+        for x, item in enumerate(items):
+            self.headline_store.append(list([item.label, item.title, x]))
 
     def show_new_article(self, selection):
-        (model, iter) = selection.get_selected()
-        selected_item = self.gatherer.collected_items[model[iter][2]]
-        TextFormat.full_story(selected_item, self.text_view)
-
+        if selection:
+            model, iter = selection.get_selected()
+            self.last_item_index = model[iter][2]
+            TextFormat.full_story(self.gatherer.item(self.last_item_index), self.text_view)
 
 

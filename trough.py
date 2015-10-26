@@ -39,18 +39,18 @@ class Trough(Gtk.Window):
         self.header_bar = self.create_header()
         
         #TODO: Should do the fetch in another thread or coniditionally if batch fetch isn't desired
-        self.gatherer = Gatherer()
-        self.gatherer.collect(self.config.feeds)
+        self.gatherer = Gatherer(self.config)
+        self.gatherer.collect()
 
         # Split headlines/news view
         self.split = True  # TODO: will be in settings
         if self.split:
             self.splitBox = SplitNews(self.config, self.gatherer)
-            self.add(self.splitBox.create_display())
+            self.add(self.splitBox.top_level())
             self.splitBox.populate(self.gatherer.collected_items)
         else:
             self.singleBox = SingleNews(self.config)
-            self.add(self.singleBox.create_display())
+            self.add(self.singleBox.top_level())
             self.singleBox.populate(self.gatherer.collected_items)
 
         self.show_all()
@@ -124,7 +124,7 @@ class Trough(Gtk.Window):
         return None
 
     def on_refresh_clicked(self, widget):
-        self.current_view().refresh()
+        self.current_view().refresh(self.gatherer.collect())
 
     @staticmethod
     def do_scroll(widget, scroll):
@@ -133,11 +133,10 @@ class Trough(Gtk.Window):
         except AttributeError:
             pass
 
-    #TODO: Abstract newsBox calls to allow for switch between split/single
     def on_key_press(self, widget, event):
         key = Gdk.keyval_name(event.keyval)
         if key == "F5":
-            self.on_refresh_clicked(widget)
+            self.on_refresh_clicked(None)
         elif key == "Left":
             self.current_view().change_position(-1)
         elif key == "Right":

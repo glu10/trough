@@ -24,10 +24,8 @@ from webbrowser import open_new_tab
 class NewsView(metaclass=ABCMeta):
 
     @abstractmethod
-    def create_display(self):
-        """
-        Create the widgets related to this display and returns the top-level container.
-        """
+    def top_level(self):
+        """ Return the top-level GUI container of this component """
 
     @abstractmethod
     def destroy_display(self):
@@ -41,12 +39,15 @@ class NewsView(metaclass=ABCMeta):
         Change which story is being displayed, by going up or down a list.
         """
 
-    @abstractmethod
-    def open_link(self, url=""):
+    def open_link(self, url):
         """
-        Open the currently active story URL, if one exists, in a browser.
+        Open the provided URL in a browser.
         """
         open_new_tab(url)
+
+    @abstractmethod
+    def get_then_open_link(self, gatherer):
+        """ Retrieves the currently active story's url, then calls open_link """
 
     @abstractmethod
     def populate(self, items):
@@ -55,7 +56,7 @@ class NewsView(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def refresh(self):
+    def refresh(self, items):
         """
         Clear the current contents of the view and populate them again.
         """
