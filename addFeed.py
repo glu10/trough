@@ -56,7 +56,10 @@ class AddFeed(Gtk.Dialog):
 
     def add_entry(self, config):
         name = self.name_entry.get_text()
-        uri = self.url_entry.get_text().strip("http://")
+        uri = self.url_entry.get_text()
+        if uri[0] != '/':
+            if not uri.startswith("http"):
+                uri = "http://" + uri
 
         if name != "" and uri != "":
             try:

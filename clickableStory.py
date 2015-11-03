@@ -21,7 +21,6 @@
 from gi.repository import Gtk, Gdk, Pango
 from textFormat import TextFormat
 
-#TODO: Rename this class later to have a common terminology, story/article/item are getting mixed up
 class ClickableStory:
     """ Content of an RSS entry. Possibly supplemented with scraped information. Configurable appearance. """
     def __init__(self, item, parent):

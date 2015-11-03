@@ -20,6 +20,10 @@
 
 import feedparser
 import requests
+import re
+import rssParsingRules
+from scraping import cleanup
+
 from scraping import select_rule
 from item import Item
 
@@ -40,17 +44,26 @@ class Gatherer:
         collection = list()
 
         for label, uri in self.config.feeds.items():
-            content = feedparser.parse(uri)
+
+            content = feedparser.parse(uri)  # Should actually cache the feed, then only update if it's out of date.
+
+            # TODO: Make hook for special RSS parsing
+
             for entry in content['entries']:
-                item = Item(label, entry['title'], entry['description'], entry['link'])
-                #if 'image' in entry.keys():
-                 #   self.fetch_image(item, entry['image'])
+
+                item = Item(label, entry['title'], self.description_cleanup(entry['description']), entry['link'])
                 collection.append(item)
 
         if collection is not None:
             self.collected_items = collection
 
         return self.collected_items
+
+    @staticmethod
+    def description_cleanup(description):
+        description = re.sub(r'\s+', ' ', description)
+        description = re.sub(r'\n\n(\n+)', '\n\n', description)
+        return re.sub(r'<.*?>', '', description)
 
     @staticmethod
     def get_article(link):

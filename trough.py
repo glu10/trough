@@ -38,7 +38,7 @@ class Trough(Gtk.Window):
         self.config.load_config()
         self.header_bar = self.create_header()
         
-        #TODO: Should do the fetch in another thread or coniditionally if batch fetch isn't desired
+        #TODO: Should do the fetch in another thread or conditionally if batch fetch isn't desired
         self.gatherer = Gatherer(self.config)
         self.gatherer.collect()
 
@@ -56,11 +56,13 @@ class Trough(Gtk.Window):
         self.show_all()
 
     def set_window_icon(self):
-        theme = Gtk.IconTheme.get_default()
         try:
-            icon = theme.lookup_icon("rss", 32, Gtk.IconLookupFlags.GENERIC_FALLBACK).load_icon()
-            self.set_icon(icon)
-        except GLib.Gerror:
+            theme = Gtk.IconTheme.get_default()
+            icon = theme.lookup_icon("rss", 32, Gtk.IconLookupFlags.GENERIC_FALLBACK)
+            if icon:
+                icon = icon.load_icon()
+                self.set_icon(icon)
+        except GLib.GError:
             pass
 
     def current_view(self):
@@ -119,6 +121,7 @@ class Trough(Gtk.Window):
         dialog.destroy()
 
         # Do a convenience refresh?
+        self.on_refresh_clicked(None)
 
     def on_settings_clicked(self, widget):
         return None
@@ -133,6 +136,7 @@ class Trough(Gtk.Window):
         except AttributeError:
             pass
 
+    # TODO: Idea: have a hotkey to add links to a buffer then you can open them all at once.
     def on_key_press(self, widget, event):
         key = Gdk.keyval_name(event.keyval)
         if key == "F5":
@@ -147,7 +151,7 @@ class Trough(Gtk.Window):
             self.do_scroll(widget, Gtk.ScrollType.STEP_FORWARD)
         elif key == "Return":
             if event.state & Gdk.ModifierType.CONTROL_MASK:
-                self.current_view().open_link()
+                self.current_view().get_then_open_link(self.gatherer)
             else:
                 self.current_view().change_position(0)
         else:

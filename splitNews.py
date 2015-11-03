@@ -29,6 +29,7 @@ class SplitNews(NewsView):
         self.config = config
         self.gatherer = gatherer
         self.last_item_index = -1
+        self.refreshing = False # Set to true while refreshing to ignore selection changes
 
         # GUI components
         self.top_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
@@ -92,8 +93,10 @@ class SplitNews(NewsView):
             self.text_view.grab_focus()
 
     def refresh(self, items):
+        self.refreshing = True
         self.headline_store.clear()
         self.populate(items)
+        self.refreshing = False
 
     def get_then_open_link(self, gatherer):
         active = gatherer.item(self.last_item_index)
@@ -105,9 +108,10 @@ class SplitNews(NewsView):
             self.headline_store.append(list([item.label, item.title, x]))
 
     def show_new_article(self, selection):
-        if selection:
+        if not self.refreshing and selection:
             model, iter = selection.get_selected()
-            self.last_item_index = model[iter][2]
-            TextFormat.full_story(self.gatherer.item(self.last_item_index), self.text_view)
+            if model:
+                self.last_item_index = model[iter][2]
+                TextFormat.full_story(self.gatherer.item(self.last_item_index), self.text_view)
 
 

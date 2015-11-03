@@ -39,11 +39,13 @@ class TextFormat:
         text_view.set_cursor_visible(False)
         text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         text_buffer = Gtk.TextBuffer()
+        text_view.set_buffer(text_buffer)
         TextFormat.headline(item.title, text_buffer)
         TextFormat.rss_description(item.description, text_buffer)
         TextFormat.scraped_story(item, text_buffer)
-        TextFormat.link_button(item.link, text_buffer, text_view)
-        text_view.set_buffer(text_buffer)
+
+        # TODO: The link button doesn't work at the moment and looked horrible even when it did.
+        # TextFormat.link_button(item.link, text_buffer, text_view)
 
         return text_view
 
@@ -69,13 +71,12 @@ class TextFormat:
 
     @staticmethod
     def link_button(link, text_buffer, text_view):
-        if link:
-            centerbold = text_buffer.create_tag("linkbutton", justification=Gtk.Justification.CENTER, weight=Pango.Weight.BOLD)
-            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), ' ', centerbold)
-            anchor = text_buffer.create_child_anchor(TextFormat.__pos(text_buffer))
-            button = Gtk.LinkButton.new_with_label(link, "Read in Browser")
-            button.set_relief(Gtk.ReliefStyle.NONE)
-            text_view.add_child_at_anchor(button, anchor)
+        centerbold = text_buffer.create_tag("linkbutton", justification=Gtk.Justification.CENTER)
+        text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), ' ', centerbold)
+        anchor = text_buffer.create_child_anchor(TextFormat.__pos(text_buffer))
+        button = Gtk.LinkButton.new_with_label(link, "Read in Browser")
+        button.set_relief(Gtk.ReliefStyle.NONE)
+        text_view.add_child_at_anchor(button, anchor)
 
     @staticmethod
     def __pos(text_buffer):  # Convenience function for readability
