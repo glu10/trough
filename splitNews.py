@@ -33,20 +33,11 @@ class SplitNews(NewsView):
 
         # GUI components
         self.top_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self.top_pane.set_wide_handle(True)
         self.headline_store = Gtk.ListStore(str, str, int)
         self.tree_view = self.create_tree_view(self.headline_store)
         self.headline_scroll = self.create_headline_box(self.tree_view)
         self.text_scroll, self.text_view = self.create_text_box()
 
-        #left =  Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        #right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        #rgba = Gdk.RGBA()
-        #rgba.parse("rgb(256, 256, 256)")
-
-        #right.override_color(Gtk.StateFlags.NORMAL, rgba)
-        #left.pack_start(self.headline_scroll, True, True, 0)
-        #right.pack_start(self.text_scroll, True, True, 0)
         self.top_pane.pack1(self.headline_scroll, resize=True, shrink=False)  # Left
         self.top_pane.pack2(self.text_scroll, resize=True, shrink=False)  # Right
 
