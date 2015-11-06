@@ -45,13 +45,42 @@ class Gatherer:
 
         for label, uri in self.config.feeds.items():
 
-            content = feedparser.parse(uri)  # Should actually cache the feed, then only update if it's out of date.
-
-            # TODO: Make hook for special RSS parsing
+            try:
+                content = feedparser.parse(uri)  # Should actually cache the feed, then only update if it's out of date.
+            except TypeError:
+                if feedparser.PREFERRED_XML_PARSERS.contains('drv_libxml2'):
+                    feedparser.PREFERRED_XML_PARSERS.remove('drv_libxml2')
+                content = feedparser.parse(uri)
 
             for entry in content['entries']:
 
-                item = Item(label, entry['title'], self.description_cleanup(entry['description']), entry['link'])
+                keys = list(entry.keys())
+
+                title = ""
+                description = ""
+                link = ""
+                subbed_title = False
+
+                if 'description' in keys:
+                    description = entry['description']
+                elif 'summary' in keys:
+                    description = entry['summary']
+                elif 'title' in keys:
+                    description = entry['title']
+                    subbed_title = True
+
+                if not subbed_title and 'title' in keys:
+                    title = entry['title']
+
+                if 'link' in keys:
+                    link = entry['link']
+
+                if not title and not description and not link:
+                    print('WARNING: The following entry with label ' + label +
+                          ' has no title, description, or link. Skipped.' + str(entry))
+                    continue
+
+                item = Item(label, title, self.description_cleanup(description), link)
                 collection.append(item)
 
         if collection is not None:

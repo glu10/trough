@@ -63,14 +63,17 @@ class AddFeed(Gtk.Dialog):
 
         if name != "" and uri != "":
             try:
+                feedparser.parse(uri)  # This call is purely to try to catch problems before the feed is added.
+            except TypeError:
+                if feedparser.PREFERRED_XML_PARSERS.contains('drv_libxml2'):
+                    feedparser.PREFERRED_XML_PARSERS.remove('drv_libxml2')
                 feedparser.parse(uri)
-                if config.add_feed(name, uri) or \
-                        dialogs.decision_popup(self, "Name of feed already exists, overwrite?", ""):
-                    config.add_feed(name, uri, overwrite=True)
-                    return True
-            except:
-                raise
-                #self.error_label.set_markup('<span color="red">URI could not be reached. Is it valid?</span>')
+
+            if config.add_feed(name, uri) or \
+                    dialogs.decision_popup(self, "Name of feed already exists, overwrite?", ""):
+                config.add_feed(name, uri, overwrite=True)
+                return True
+
         else:
             self.error_label.set_markup('<span color="red">Please fill in all of the information.</span>')
 

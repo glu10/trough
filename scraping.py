@@ -38,7 +38,10 @@ def select_rule(link, html):
 
     for identifier, scrape_rule in rules.items():  # see bottom of file for rules dictionary
         if identifier in link:
-            return cleanup(scrape_rule(soup))
+            try:
+                return cleanup(scrape_rule(soup))
+            except AttributeError:  # A rule couldn't find what it assumed would be there
+                return None
 
     return unknown_source(soup)
 
@@ -61,7 +64,7 @@ def cleanup(paragraphs):
         # Remove any leftovers from HTML
         p = re.sub(r'<.*?>', '', p)
         # Remove captions
-        if p.find('hide caption') == -1:
+        if p.find('hide caption') == -1 and p != "Advertisement":
             cleaned.append(p)
 
     return cleaned

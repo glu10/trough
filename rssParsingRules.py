@@ -26,6 +26,7 @@ import feedparser
 from item import Item
 
 #TODO: This class is currently unused but here for future reference
+#TODO: Currently not protected against missing titles/descriptions
 
 class RssRule(metaclass=ABCMeta):
 

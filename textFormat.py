@@ -33,8 +33,8 @@ class TextFormat:
         else:
             text_view = textview
 
-        text_view.set_margin_right(12)
-        text_view.set_margin_left(10)
+        text_view.set_border_window_size(Gtk.TextWindowType.LEFT, 10)
+        text_view.set_border_window_size(Gtk.TextWindowType.RIGHT, 12)
         text_view.set_editable(False)
         text_view.set_cursor_visible(False)
         text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)

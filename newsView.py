@@ -43,7 +43,8 @@ class NewsView(metaclass=ABCMeta):
         """
         Open the provided URL in a browser.
         """
-        open_new_tab(url)
+        if url:
+            open_new_tab(url)
 
     @abstractmethod
     def get_then_open_link(self, gatherer):
