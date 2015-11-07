@@ -59,17 +59,13 @@ class Gatherer:
                 title = ""
                 description = ""
                 link = ""
-                subbed_title = False
 
                 if 'description' in keys:
                     description = entry['description']
                 elif 'summary' in keys:
                     description = entry['summary']
-                elif 'title' in keys:
-                    description = entry['title']
-                    subbed_title = True
 
-                if not subbed_title and 'title' in keys:
+                if 'title' in keys:
                     title = entry['title']
 
                 if 'link' in keys:

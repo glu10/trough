@@ -104,7 +104,11 @@ class SplitNews(NewsView):
 
     def populate(self, items):
         for x, item in enumerate(items):
-            self.headline_store.append(list([item.label, item.title, x]))
+            title = item.title
+            if len(item.title) > 50: #TODO: Threshold value later
+                title = item.title[:47] + "..."
+
+            self.headline_store.append(list([item.label, title, x]))
 
     def show_new_article(self, selection):
         if not self.refreshing and selection:
