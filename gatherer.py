@@ -48,7 +48,7 @@ class Gatherer:
             try:
                 content = feedparser.parse(uri)  # Should actually cache the feed, then only update if it's out of date.
             except TypeError:
-                if feedparser.PREFERRED_XML_PARSERS.contains('drv_libxml2'):
+                if 'drv_libxml2' in feedparser.PREFERRED_XML_PARSERS:
                     feedparser.PREFERRED_XML_PARSERS.remove('drv_libxml2')
                 content = feedparser.parse(uri)
 

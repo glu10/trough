@@ -65,7 +65,7 @@ class AddFeed(Gtk.Dialog):
             try:
                 feedparser.parse(uri)  # This call is purely to try to catch problems before the feed is added.
             except TypeError:
-                if feedparser.PREFERRED_XML_PARSERS.contains('drv_libxml2'):
+                if 'drv_libxml2' in feedparser.PREFERRED_XML_PARSERS:
                     feedparser.PREFERRED_XML_PARSERS.remove('drv_libxml2')
                 feedparser.parse(uri)
 
