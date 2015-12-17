@@ -106,7 +106,7 @@ class SplitNews(NewsView):
         for x, item in enumerate(items):
             title = item.title
             threshold = 100
-            if len(item.title) > threshold: #TODO: Threshold value later
+            if len(item.title) > threshold: #TODO: Hardcoding this is poor form, make a more dynamic solution
                 title = item.title[:threshold-3] + "..."
 
             self.headline_store.append(list([item.label, title, x]))

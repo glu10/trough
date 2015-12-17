@@ -120,8 +120,9 @@ class Trough(Gtk.Window):
             response = dialog.run()
         dialog.destroy()
 
-        # Do a convenience refresh?
-        self.on_refresh_clicked(None)
+        # Do a convenience refresh
+        if response == Gtk.ResponseType.OK:
+            self.on_refresh_clicked(None)
 
     def on_settings_clicked(self, widget):
         return None

@@ -19,7 +19,10 @@
 """
 
 import os, errno, json
+from collections import OrderedDict
+from gi.repository import Gio
 
+# Currently undergoing the transition of actually implementing the settings
 
 class ConfigManager:
     """ Deals with configuration data that survives between sessions
@@ -39,6 +42,52 @@ class ConfigManager:
         self.feeds = {}
         self.read = {}
         self.settings = {}
+
+    def default_settings(self):
+        settings = OrderedDict()
+        settings['Appearance'] = self.default_appearance_settings()
+        settings['Feeds'] = self.default_feeds_settings()
+        settings['Filtration'] = self.default_filtration_settings()
+        settings['Retrieval'] = self.default_retrieval_settings()
+
+    def default_appearance_settings(self):
+        s = OrderedDict()
+        s['View'] = 'Split'
+
+        gs = Gio.Settings('org.gnome.desktop.interface')
+        default_font = gs.get_string('font-name')
+        # monospace_font = gs.get_string('monospace-font-name')
+        document_font = gs.get_string('document-font-name')
+
+        s['Category Font'] = default_font
+        s['Headline Font'] = default_font
+        s['Story Font'] = document_font
+
+        s['Font Color'] = [0, 0, 0, 1.0]  # RGBA for solid black.
+        s['Background Color'] = [255, 255, 255, 0.0]  # RGBA for solid white
+        return s
+
+    def default_feeds_settings(self):
+        return OrderedDict()
+
+    def default_filtration_settings(self):  # TODO: Support for user-supplied regex expressions
+        s = OrderedDict()
+        s['Filtered Links'] = list()
+        s['Filtered Titles'] = list()
+        s['Filtered Content'] = list()
+        s['HideOrHighlight'] = "Highlight"
+        s['FilteredHighlight'] = [128, 128, 128, .5]  # RGBA values (for a slightly translucent gray)
+        return s
+
+    def default_retrieval_settings(self):  # TODO: Support for auto-refresh on a feed-by-feed basis would be nice
+        s = OrderedDict()
+        s['Refresh When Opened'] = True
+        s['Auto-refresh'] = False
+        s['Auto-refresh Interval Time'] = 30   # Non-negative value, cap at a max value
+        s['Auto-refresh Unit'] = "Minute"      # Second/Hour/Minute/Day
+        s['Scraping Strategy'] = 'Individual'  # By Feed/Individual/On Refresh
+        return s
+
 
     def load_config(self):
         self.ensure_directory_exists()

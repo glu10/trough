@@ -21,8 +21,6 @@
 import feedparser
 import requests
 import re
-import rssParsingRules
-from scraping import cleanup
 
 from scraping import select_rule
 from item import Item
