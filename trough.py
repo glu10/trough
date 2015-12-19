@@ -27,6 +27,7 @@ from configManager import ConfigManager
 from singleNews import SingleNews
 from splitNews import SplitNews
 from gatherer import Gatherer
+from preferencesWindow import PreferencesWindow
 
 class Trough(Gtk.Window):
 
@@ -78,7 +79,7 @@ class Trough(Gtk.Window):
         self.set_titlebar(header_bar)
 
         header_bar.pack_start(self.create_add_button())
-        header_bar.pack_start(self.create_settings_button())
+        header_bar.pack_start(self.create_preferences_button())
         header_bar.pack_start(self.create_refresh_button())
         return header_bar
 
@@ -91,14 +92,14 @@ class Trough(Gtk.Window):
         add_button.connect("clicked", self.on_add_clicked)
         return add_button
 
-    def create_settings_button(self):
-        settings_button = Gtk.Button()
-        settings_icon = Gio.ThemedIcon(name="preferences")
-        settings_image = Gtk.Image.new_from_gicon(settings_icon, Gtk.IconSize.BUTTON)
-        settings_button.add(settings_image)
-        settings_button.set_tooltip_text("Settings")
-        settings_button.connect("clicked", self.on_settings_clicked)
-        return settings_button
+    def create_preferences_button(self):
+        preferences_button = Gtk.Button()
+        preferences_icon = Gio.ThemedIcon(name="preferences")
+        preferences_image = Gtk.Image.new_from_gicon(preferences_icon, Gtk.IconSize.BUTTON)
+        preferences_button.add(preferences_image)
+        preferences_button.set_tooltip_text("Preferences")
+        preferences_button.connect("clicked", self.on_preferences_clicked)
+        return preferences_button
 
     def create_refresh_button(self):
         refresh_button = Gtk.Button()
@@ -124,8 +125,12 @@ class Trough(Gtk.Window):
         if response == Gtk.ResponseType.OK:
             self.on_refresh_clicked(None)
 
-    def on_settings_clicked(self, widget):
-        return None
+    def on_preferences_clicked(self, widget):
+        sw = PreferencesWindow(self, self.config)
+        response = sw.run()
+        if response == Gtk.ResponseType.OK:
+            sw.apply_choices()
+        sw.destroy()
 
     def on_refresh_clicked(self, widget):
         self.current_view().refresh(self.gatherer.collect())

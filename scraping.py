@@ -64,13 +64,13 @@ def cleanup(paragraphs):
         # Remove any leftovers from HTML
         p = re.sub(r'<.*?>', '', p)
         # Remove captions
-        if p.find('hide caption') == -1 and p != "Advertisement":
+        if p.find('hide caption') == -1 and p != 'Advertisement':
             cleaned.append(p)
 
     return cleaned
 
 def abc_news(soup):
-    return soup.findAll('p', {'itemprop':'articleBody'})
+    return soup.findAll('p', {'itemprop': 'articleBody'})
 
 def bloomberg(soup):
     return soup.find('div', {'class': 'article-body__content'}).findAll('p')

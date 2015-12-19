@@ -29,7 +29,7 @@ class SplitNews(NewsView):
         self.config = config
         self.gatherer = gatherer
         self.last_item_index = -1
-        self.refreshing = False # Set to true while refreshing to ignore selection changes
+        self.refreshing = False  # Set to true while refreshing to ignore selection changes
 
         # GUI components
         self.top_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
@@ -48,7 +48,7 @@ class SplitNews(NewsView):
         columns = ('Label', 'Headline')
         for i in range(len(columns)):
             cell = Gtk.CellRendererText()
-            if i == 0:
+            if i == 0:  # Label
                 cell.props.weight_set = True
                 cell.props.weight = Pango.Weight.BOLD
             col = Gtk.TreeViewColumn(columns[i], cell, text=i)
@@ -92,7 +92,7 @@ class SplitNews(NewsView):
             self.text_view.grab_focus()
 
     def refresh(self, items):
-        self.refreshing = True
+        self.refreshing = True  # Toggling boolean as a hack to cover up the selection changed signal during the clear
         self.headline_store.clear()
         self.populate(items)
         self.refreshing = False

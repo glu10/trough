@@ -22,78 +22,74 @@ import os, errno, json
 from collections import OrderedDict
 from gi.repository import Gio
 
-# Currently undergoing the transition of actually implementing the settings
+# Currently undergoing the transition of actually implementing the preferences
 
 class ConfigManager:
     """ Deals with configuration data that survives between sessions
-        Examples are added feeds, filters, settings, etc. """
-    feed_default = {}
-    read_default = {}
-    settings_default = { 'auto_refresh_mins': 10,  # <= 0 never refresh, pos # of mins.
-                         'refresh_when_opened': True,
-                         'remember_read_mins': 1440,  # neg never remember, 0 always, pos # of mins.
-                         'hide_read': False}  #
+        Examples are added feeds, filters, preferences, etc. """
 
     def __init__(self):
         self.config_home = os.path.join(os.path.expanduser("~"), ".config", "trough")
-        self.settings_file = "settings.json"
+        self.preferences_file = "preferences.json"
         self.feed_file = "feeds.json"
         self.read_file = "read.json"
         self.feeds = {}
         self.read = {}
-        self.settings = {}
+        self.preferences = self.default_preferences()
 
-    def default_settings(self):
-        settings = OrderedDict()
-        settings['Appearance'] = self.default_appearance_settings()
-        settings['Feeds'] = self.default_feeds_settings()
-        settings['Filtration'] = self.default_filtration_settings()
-        settings['Retrieval'] = self.default_retrieval_settings()
+    def default_preferences(self):
+        preferences = OrderedDict()
+        preferences['Appearance'] = self.default_appearance_preferences()
+        preferences['Feeds'] = self.default_feeds_preferences()
+        preferences['Filtration'] = self.default_filtration_preferences()
+        preferences['Retrieval'] = self.default_retrieval_preferences()
+        return preferences
 
-    def default_appearance_settings(self):
-        s = OrderedDict()
-        s['View'] = 'Split'
+    def default_appearance_preferences(self):
+        p = OrderedDict()
+        p['View'] = 'Double'
 
+        # TODO: Investigate if these font strings are reliably set among different DEs/WMs
         gs = Gio.Settings('org.gnome.desktop.interface')
         default_font = gs.get_string('font-name')
-        # monospace_font = gs.get_string('monospace-font-name')
+        # monospace_font = gs.get_string('monospace-font-name'
         document_font = gs.get_string('document-font-name')
 
-        s['Category Font'] = default_font
-        s['Headline Font'] = default_font
-        s['Story Font'] = document_font
+        p['Category Font'] = default_font
+        p['Headline Font'] = default_font
+        p['Story Font'] = document_font
 
-        s['Font Color'] = [0, 0, 0, 1.0]  # RGBA for solid black.
-        s['Background Color'] = [255, 255, 255, 0.0]  # RGBA for solid white
-        return s
+        p['Font Color'] = [0, 0, 0, 1.0]  # RGBA for solid black.
+        p['Background Color'] = [255, 255, 255, 0.0]  # RGBA for solid white
+        return p
 
-    def default_feeds_settings(self):
+    def default_feeds_preferences(self):
         return OrderedDict()
 
-    def default_filtration_settings(self):  # TODO: Support for user-supplied regex expressions
-        s = OrderedDict()
-        s['Filtered Links'] = list()
-        s['Filtered Titles'] = list()
-        s['Filtered Content'] = list()
-        s['HideOrHighlight'] = "Highlight"
-        s['FilteredHighlight'] = [128, 128, 128, .5]  # RGBA values (for a slightly translucent gray)
-        return s
+    def default_filtration_preferences(self):  # TODO: Support for user-supplied regex expressions
+        p = OrderedDict()
+        p['Filtered Links'] = list()
+        p['Filtered Titles'] = list()
+        p['Filtered Content'] = list()
+        p['HideOrHighlight'] = "Highlight"
+        p['FilteredHighlight'] = [128, 128, 128, .5]  # RGBA values (for a slightly translucent gray)
+        return p
 
-    def default_retrieval_settings(self):  # TODO: Support for auto-refresh on a feed-by-feed basis would be nice
-        s = OrderedDict()
-        s['Refresh When Opened'] = True
-        s['Auto-refresh'] = False
-        s['Auto-refresh Interval Time'] = 30   # Non-negative value, cap at a max value
-        s['Auto-refresh Unit'] = "Minute"      # Second/Hour/Minute/Day
-        s['Scraping Strategy'] = 'Individual'  # By Feed/Individual/On Refresh
-        return s
+    def default_retrieval_preferences(self):  # TODO: Support for auto-refresh on a feed-by-feed basis would be nice
+        p = OrderedDict()
+        p['Refresh When Opened'] = True
+        p['Auto-refresh'] = False
+        p['Auto-refresh Interval Time'] = 30   # Non-negative value, cap at a max value
+        p['Auto-refresh Unit'] = "Minute"      # Second/Hour/Minute/Day
+        p['Scraping Strategy'] = 'Individual'  # By Feed/Individual/On Refresh
+        return p
 
 
     def load_config(self):
         self.ensure_directory_exists()
-        self.settings = self.load_file(self.settings_file, self.settings_default)
-        self.feeds = self.load_file(self.feed_file, self.feed_default)
-        self.read = self.load_file(self.read_file, self.read_default)
+        self.preferences = self.load_file(self.preferences_file, self.preferences)
+        self.feeds = self.load_file(self.feed_file, self.feeds)
+        # self.read = self.load_file(self.read_file, self.read)
 
     # If the configuration directory doesn't exist, try to make it.
     # TODO: Handle permission error? Not sure if necessary
@@ -120,16 +116,28 @@ class ConfigManager:
         with open(file_path, 'w') as data_file:
             json.dump(data, data_file)
 
-    # Check if the specified file exists, and if it doesn't make it with the default configuration
+    def update_preferences_file(self):
+        """ Public convenience function """
+        self.update_file(self.preferences_file, self.preferences)
+
+    # Check if the specified file exists, and if it doesn't make a file with the default configuration
     def load_file(self, filename, defaults):
         file_path = os.path.join(self.config_home, filename)
+        data = {}
 
-        if not os.path.isfile(file_path):
-            self.update_file(filename, defaults)
-            data = defaults
+        # If we expect some information, and the file doesn't exist or is empty
+        if defaults and (not os.path.isfile(file_path) or os.stat(file_path).st_size == 0):
+            if defaults:
+                self.update_file(filename, defaults)  # Write defaults to replace the empty/nonexistent file
+                data = defaults
         else:
             with open(file_path, 'r') as data_file:
-                data = json.load(data_file)
-                if defaults and not set(data.keys()).issubset(set(defaults.keys())):
-                    raise RuntimeError("Incomplete data in " + file_path + ", fix the problem or delete the file.")
+                try:
+                    data = json.load(data_file)
+                except json.decoder.JSONDecodeError:
+                    raise RuntimeError("Error parsing the JSON in " + file_path + ", is it valid JSON?")
+                # Make sure that the information we are getting actually corresponds to real preferences.
+                if defaults and sorted(data.keys()) != sorted(defaults.keys()):
+                    raise RuntimeError("Data in " + file_path + " did not match expectations," +
+                                                                " fix the problem or delete the file.")
         return data

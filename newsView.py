@@ -25,7 +25,9 @@ class NewsView(metaclass=ABCMeta):
 
     @abstractmethod
     def top_level(self):
-        """ Return the top-level GUI container of this component """
+        """
+        Return the top-level GUI container of this component
+        """
 
     @abstractmethod
     def destroy_display(self):
@@ -48,7 +50,9 @@ class NewsView(metaclass=ABCMeta):
 
     @abstractmethod
     def get_then_open_link(self, gatherer):
-        """ Retrieves the currently active story's url, then calls open_link """
+        """
+        Retrieves the currently active story's url, then calls open_link
+        """
 
     @abstractmethod
     def populate(self, items):
