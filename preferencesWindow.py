@@ -47,10 +47,10 @@ class PreferencesWindow(Gtk.Dialog):
     def apply_choices(self):
         """
         Make the selected preferences the actual preferences.
-        Signal for changes?
         """
+        # TODO: Use the observer pattern to notify of changes
         for category in self.preferences_categories:
-            self.preferences[category.label] = category.gather_choices()
+            self.preferences[category.label] = category.choices
         self.config.update_preferences_file()
 
         

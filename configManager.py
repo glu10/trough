@@ -33,9 +33,8 @@ class ConfigManager:
         self.preferences_file = "preferences.json"
         self.feed_file = "feeds.json"
         self.read_file = "read.json"
-        self.feeds = {}
-        self.read = {}
         self.preferences = self.default_preferences()
+        self.feeds = self.preferences['Feeds']  # TODO: Clean this up, self.feeds is assumed in other files
 
     def default_preferences(self):
         preferences = OrderedDict()
@@ -59,8 +58,8 @@ class ConfigManager:
         p['Headline Font'] = default_font
         p['Story Font'] = document_font
 
-        p['Font Color'] = [0, 0, 0, 1.0]  # RGBA for solid black.
-        p['Background Color'] = [255, 255, 255, 0.0]  # RGBA for solid white
+        p['Font Color'] = 'rgba(0, 0, 0, 1.0)'  # RGBA for solid black.
+        p['Background Color'] = 'rgba(255, 255, 255, 1.0)'  # RGBA for solid white
         return p
 
     def default_feeds_preferences(self):
@@ -72,7 +71,7 @@ class ConfigManager:
         p['Filtered Titles'] = list()
         p['Filtered Content'] = list()
         p['HideOrHighlight'] = "Highlight"
-        p['FilteredHighlight'] = [128, 128, 128, .5]  # RGBA values (for a slightly translucent gray)
+        p['FilteredHighlight'] = 'rgba(128, 128, 128, .5)'  # RGBA values (for a slightly translucent gray)
         return p
 
     def default_retrieval_preferences(self):  # TODO: Support for auto-refresh on a feed-by-feed basis would be nice
@@ -88,8 +87,8 @@ class ConfigManager:
     def load_config(self):
         self.ensure_directory_exists()
         self.preferences = self.load_file(self.preferences_file, self.preferences)
-        self.feeds = self.load_file(self.feed_file, self.feeds)
-        # self.read = self.load_file(self.read_file, self.read)
+        self.preferences['Feeds'] = self.load_file(self.feed_file, self.preferences['Feeds'])
+        self.feeds = self.preferences['Feeds']
 
     # If the configuration directory doesn't exist, try to make it.
     # TODO: Handle permission error? Not sure if necessary
@@ -104,12 +103,12 @@ class ConfigManager:
         if name in self.feeds and not overwrite:
             return False
         else:
-            self.feeds[name] = uri
+            self.preferences['Feeds'][name] = uri
             self.update_feeds()
             return True
 
     def update_feeds(self):
-        self.update_file(self.feed_file, self.feeds)
+        self.update_file(self.feed_file, self.preferences['Feeds'])
 
     def update_file(self, filename, data):
         file_path = os.path.join(self.config_home, filename)
@@ -123,7 +122,7 @@ class ConfigManager:
     # Check if the specified file exists, and if it doesn't make a file with the default configuration
     def load_file(self, filename, defaults):
         file_path = os.path.join(self.config_home, filename)
-        data = {}
+        data = OrderedDict()
 
         # If we expect some information, and the file doesn't exist or is empty
         if defaults and (not os.path.isfile(file_path) or os.stat(file_path).st_size == 0):

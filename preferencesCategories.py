@@ -19,12 +19,14 @@
 """
 
 from abc import ABCMeta, abstractmethod
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
+
+# NOT FINISHED
 
 class PreferencesCategory(metaclass=ABCMeta):
 
     def __init__(self, config, label):
-        self.choices = config[label]
+        self.choices = config[label].copy()  # Copying to prevent overwriting settings until final okay.
         self.label = label
 
     @abstractmethod
@@ -40,10 +42,21 @@ class PreferencesCategory(metaclass=ABCMeta):
         """
 
     def bold_label(self, text):
+        """
+        Label used in a preferences category to title a class of selections
+        """
         label = Gtk.Label()
         label.set_markup('<b>' + text + '</b>')
         return label
 
+    def descriptor_label(self, text):
+        """
+        Label used in a preferences category to label an individual item in a class of selections
+        """
+        label = Gtk.Label(text)
+        label.set_alignment(0, .5)  # Left justifies (set_justify will not work)
+        label.set_padding(5, 0)  # Pad from the left side
+        return label
 
 class AppearancePreferences(PreferencesCategory):
     """
@@ -59,34 +72,40 @@ class AppearancePreferences(PreferencesCategory):
         grid.set_column_spacing(7)
 
         # View selection
-        grid.attach(self.bold_label('View'), 0, 0, 1, 1)
-        grid.attach(self.view_combo_box(), 0, 1, 1, 1)
+        grid.set_orientation(Gtk.Orientation.VERTICAL)
+        grid.add(self.bold_label('View'))
+        grid.add(self.view_combo_box())
 
         # Font selection
-        grid.attach(self.bold_label('Fonts'), 0, 6, 1, 2)
+        grid.add(self.bold_label('Fonts'))
         panes = ['Category Font', 'Headline Font', 'Story Font']
-        for i, fb in enumerate(self.font_buttons(panes)):
-            grid.attach(Gtk.Label(panes[i]), 0, i+8, 1, 1)
-            grid.attach(fb, 1, i+8, 1, 1)
+        for pane in panes:
+            label = self.descriptor_label(pane)
+            grid.add(label)
+            grid.attach_next_to(self.font_button(pane), label, Gtk.PositionType.RIGHT, 1, 1)
+
+        # Font Colors
+        grid.add(self.bold_label('Colors'))
+        color_idents = ['Font Color', 'Background Color']
+        for c in color_idents:
+            label = self.descriptor_label(c)
+            grid.add(label)
+            grid.attach_next_to(self.color_button(c), label, Gtk.PositionType.RIGHT, 1, 1)
 
         return grid
 
-    def font_buttons(self, panes):
-        fbs = list()
-        for pane in panes:
-            fb = Gtk.FontButton()
-            fb.set_title(pane + " Font")
-            fb.set_font_name(self.choices[pane])
-            fb.connect('font-set', self.font_switched, pane)
-            fbs.append(fb)
-        return fbs
+    def font_button(self, pane):
+        fb = Gtk.FontButton()
+        fb.set_title(pane)
+        fb.set_font_name(self.choices[pane])
+        fb.connect('font-set', self.font_switched, pane)
+        return fb
 
     def font_switched(self, button, pane):
         self.choices[pane] = button.get_font_name()
 
     def view_combo_box(self):
         views = ['Single', 'Double', 'Triple']
-
         cb = Gtk.ComboBoxText()
         for view in views:
             cb.append_text(view)
@@ -97,6 +116,16 @@ class AppearancePreferences(PreferencesCategory):
     def view_switched(self, combo):  # button needed?
         self.choices['View'] = combo.get_active_text()
 
+    def color_button(self, name):
+        rgba = Gdk.RGBA()
+        rgba.parse(self.choices[name])
+        cb = Gtk.ColorButton.new_with_rgba(rgba)
+        cb.connect('color-set', self.color_switched, name)
+        return cb
+
+    def color_switched(self, cc, name):
+        self.choices[name] = cc.get_rgba().to_string()
+
     def gather_choices(self):
         pass
 
@@ -106,7 +135,41 @@ class FeedsPreferences(PreferencesCategory):
         super().__init__(config, 'Feeds')
 
     def create_display_area(self):
-        return Gtk.Grid()
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        feed_list = self.create_feed_list()
+        feed_info = self.create_feed_info()
+        hbox.pack_start(feed_list, False, False, 5)
+        hbox.pack_end(feed_info, False, False, 5)
+        return hbox
+
+    def create_feed_list(self):
+        """
+        Displays a list of feed labels, if a feed is clicked the information and options for that feed are displayed
+        Above the list are two buttons, which allow for the list to be modified through insertion/deletion
+        """
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        # Buttons (used to delete or add feeds)
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        delete_button = Gtk.Button.new_with_label('-')
+        add_button = Gtk.Button.new_with_label('+')
+        button_box.pack_start(delete_button, False, False, 0)
+        button_box.pack_start(add_button, False, False, 0)
+        vbox.pack_start(button_box, False, False, 0)
+
+        # List of Feeds
+        # TODO: Should do a model here
+
+        #vbox.pack_start(list, True, True, 0)
+
+        return vbox
+
+    def create_feed_info(self):
+        """
+        Display the information related to a feed. Allow editing of the values?
+        """
+        return Gtk.Frame()
+
 
     def gather_choices(self):
         pass
