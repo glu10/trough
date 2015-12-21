@@ -23,7 +23,7 @@ A GTK+ RSS news reader (currently in the early stages of development)
 
 ## FAQ
 
-##### Why build another RSS reader?
+#### Why build another RSS reader?
 
 Current RSS readers only display the content given directly in an RSS feed, which is entirely sensible.
 Trough aims to take on the unmaintainable task of displaying both RSS content and linked content.
