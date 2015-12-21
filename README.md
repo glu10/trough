@@ -30,11 +30,14 @@ Trough aims to take on the unmaintainable task of displaying both RSS content an
 Displaying linked content can be done through scraping, but scraping rules break and can't possibly be comprehensive.
 What's an RSS reader to do? Assume an advanced user and cede control.
 
-##### Isn't just using a browser easier?
+
+#### Isn't just using a browser easier?
 For one or two stories absolutely, but habitually checking sites becomes tiresome.
 
-##### When will Trough be usable?
+
+#### When will Trough be usable?
 Hopefully by the end of December 2015. This prediction will be updated if things change.
 
-##### When will Trough be stable?
+
+#### When will Trough be stable?
 Let's get to usable first.

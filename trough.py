@@ -39,7 +39,8 @@ class Trough(Gtk.Window):
         self.config.load_config()
         self.header_bar = self.create_header()
         
-        #TODO: Should do the fetch in another thread or conditionally if batch fetch isn't desired
+        # TODO: Should do the fetch in another thread or conditionally if batch fetch isn't desired
+        # TODO: The initial GUI display should definitely not be tied to the network fetch!
         self.gatherer = Gatherer(self.config)
         self.gatherer.collect()
 
@@ -63,7 +64,7 @@ class Trough(Gtk.Window):
             if icon:
                 icon = icon.load_icon()
                 self.set_icon(icon)
-        except GLib.GError:
+        except GLib.GError:  # If the icon theme doesn't have an icon for RSS it's okay, purely visual
             pass
 
     def current_view(self):
@@ -115,7 +116,7 @@ class Trough(Gtk.Window):
         dialog = AddFeed(self)
         response = dialog.run()
 
-        # TODO: This loop is hacky and most likely not the right way to do this
+        # TODO: Fix this hack by creating a custom dialog with the OK button linked to a function that verifies info.
         while not (response == Gtk.ResponseType.CANCEL or response == Gtk.ResponseType.NONE or (
                 response == Gtk.ResponseType.OK and dialog.add_entry(self.config))):
             response = dialog.run()
@@ -126,11 +127,11 @@ class Trough(Gtk.Window):
             self.on_refresh_clicked(None)
 
     def on_preferences_clicked(self, widget):
-        sw = PreferencesWindow(self, self.config)
-        response = sw.run()
+        pw = PreferencesWindow(self, self.config)
+        response = pw.run()
         if response == Gtk.ResponseType.OK:
-            sw.apply_choices()
-        sw.destroy()
+            pw.apply_choices()
+        pw.destroy()
 
     def on_refresh_clicked(self, widget):
         self.current_view().refresh(self.gatherer.collect())

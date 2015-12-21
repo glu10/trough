@@ -31,8 +31,6 @@ class ConfigManager:
     def __init__(self):
         self.config_home = os.path.join(os.path.expanduser("~"), ".config", "trough")
         self.preferences_file = "preferences.json"
-        self.feed_file = "feeds.json"
-        self.read_file = "read.json"
         self.preferences = self.default_preferences()
         self.feeds = self.preferences['Feeds']  # TODO: Clean this up, self.feeds is assumed in other files
 
@@ -87,7 +85,8 @@ class ConfigManager:
     def load_config(self):
         self.ensure_directory_exists()
         self.preferences = self.load_file(self.preferences_file, self.preferences)
-        self.preferences['Feeds'] = self.load_file(self.feed_file, self.preferences['Feeds'])
+        if not self.preferences['Feeds']:
+            self.preferences['Feeds'] = OrderedDict()
         self.feeds = self.preferences['Feeds']
 
     # If the configuration directory doesn't exist, try to make it.
@@ -104,11 +103,8 @@ class ConfigManager:
             return False
         else:
             self.preferences['Feeds'][name] = uri
-            self.update_feeds()
+            self.update_preferences_file()
             return True
-
-    def update_feeds(self):
-        self.update_file(self.feed_file, self.preferences['Feeds'])
 
     def update_file(self, filename, data):
         file_path = os.path.join(self.config_home, filename)
@@ -116,7 +112,7 @@ class ConfigManager:
             json.dump(data, data_file)
 
     def update_preferences_file(self):
-        """ Public convenience function """
+        """ Convenience function """
         self.update_file(self.preferences_file, self.preferences)
 
     # Check if the specified file exists, and if it doesn't make a file with the default configuration

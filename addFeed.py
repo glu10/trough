@@ -30,33 +30,32 @@ class AddFeed(Gtk.Dialog):
                                                           Gtk.STOCK_OK, Gtk.ResponseType.OK))
 
         self.set_default_size(150, 100)
-
         box = self.get_content_area()
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        box.add(vbox)
 
-        name_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=50)
-        name_label = Gtk.Label("Name of Feed", xalign=0)
-        self.name_entry = Gtk.Entry()
-        name_hbox.pack_start(name_label, True, True, 0)
-        name_hbox.pack_start(self.name_entry, True, True, 0)
+        grid = Gtk.Grid(column_spacing=3, row_spacing=3, orientation=Gtk.Orientation.VERTICAL)
 
-        url_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=50)
-        url_label = Gtk.Label("URL of Feed   ", xalign=0)
-        self.url_entry = Gtk.Entry()
-        url_hbox.pack_start(url_label, True, True, 0)
-        url_hbox.pack_start(self.url_entry, True, True, 0)
+        self.name_entry = self.add_labeled_entry("Name of Feed", grid, 4)
+        self.uri_entry = self.add_labeled_entry("URI", grid, 4)
 
-        self.error_label = Gtk.Label("", xalign=0)
+        self.error_label = Gtk.Label()
+        self.error_label.set_markup('<span color="red">Please fill in all of the information.</span>')
+        grid.attach(self.error_label, 1, 3, 3, 1)
 
-        vbox.pack_start(name_hbox, True, True, 0)
-        vbox.pack_start(url_hbox, True, True, 0)
-        vbox.pack_start(self.error_label, True, True, 0)
+        box.add(grid)
         self.show_all()
+        self.error_label.hide()  # Is shown only if the information entered isn't complete.
+
+    @staticmethod
+    def add_labeled_entry(text, grid, width_entry):
+        label = Gtk.Label(text, xalign=0)
+        entry = Gtk.Entry(hexpand=True)
+        grid.add(label)
+        grid.attach_next_to(entry, label, Gtk.PositionType.RIGHT, width_entry, 1)
+        return entry
 
     def add_entry(self, config):
         name = self.name_entry.get_text()
-        uri = self.url_entry.get_text()
+        uri = self.uri_entry.get_text()
 
         if name != "" and uri != "":
 
@@ -71,12 +70,15 @@ class AddFeed(Gtk.Dialog):
                     feedparser.PREFERRED_XML_PARSERS.remove('drv_libxml2')
                 feedparser.parse(uri)
 
-            if config.add_feed(name, uri) or \
-                    dialogs.decision_popup(self, "Name of feed already exists, overwrite?", ""):
-                config.add_feed(name, uri, overwrite=True)
+            if config.add_feed(name, uri):
                 return True
+            elif dialogs.decision_popup(self, "Name of feed already exists, overwrite?", ""):
+                    config.add_feed(name, uri, overwrite=True)
+                    return True
+            else:
+                return False
 
         else:
-            self.error_label.set_markup('<span color="red">Please fill in all of the information.</span>')
+            self.error_label.show()
 
         return False
