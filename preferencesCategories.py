@@ -21,6 +21,8 @@
 from abc import ABCMeta, abstractmethod
 from gi.repository import Gtk, Gdk, Gio
 from collections import OrderedDict
+from addFeed import AddFeed
+
 
 # NOT FINISHED
 
@@ -135,12 +137,12 @@ class FeedsPreferences(PreferencesCategory):
     I'm going to have feed information be edited through a new dialog (although that is kind of annoying)
     because it simplifies how to catch/verify changes.
     """
-    def __init__(self, preferences, config):
+    def __init__(self, preferences, window):
         super().__init__(preferences, 'Feeds')
+        self.window = window
         self.info_box = self.info_placeholder()
         self.feed_list = Gtk.ListStore(str, str)
         self.view = Gtk.TreeView(model=self.feed_list)
-        self.config = config
 
     def create_display_area(self):
         grid = Gtk.Grid(column_homogeneous=True, row_homogeneous=True)
@@ -192,7 +194,7 @@ class FeedsPreferences(PreferencesCategory):
         frame.set_label_align(.5, 0)  # Centers the frame label
         return frame
 
-    def create_feed_info(self, feed_name):
+    def create_feed_info(self, feed_name, iter):
         """
         Display the information related to a feed, as well as a button to edit information.
         """
@@ -206,7 +208,7 @@ class FeedsPreferences(PreferencesCategory):
         # Feed URI
         uri_desc = self.bold_label('URI', left=True)
         grid.add(uri_desc)
-        uri = self.choices[feed_name]  # this will change probably to self.choices[feed_name]['URI'] later
+        uri = self.feed_list[iter][1]
         grid.attach_next_to(self.descriptor_label(uri), uri_desc, Gtk.PositionType.RIGHT, 5, 1)
         return grid
 
@@ -221,7 +223,7 @@ class FeedsPreferences(PreferencesCategory):
                     child.destroy()
 
             # Display new information
-            self.info_box.add(self.create_feed_info(feed_name))
+            self.info_box.add(self.create_feed_info(feed_name, iter))
             self.info_box.show_all()
 
     def remove_selection(self, button):
@@ -234,7 +236,19 @@ class FeedsPreferences(PreferencesCategory):
             #    self.attempt_selection(selection, model.iter_parent(iter))
 
     def add_feed(self, button):  # TODO: Redesign addFeed to allow for it to be reused here.
-        pass
+        """
+        Note: This only adds the feed to the temporary feed list in the preferences window.
+        """
+        dialog = AddFeed(self.window)
+        response = dialog.get_response(self.feed_list)
+        if response:
+            if response.overwrite:
+                for i, feed in enumerate(self.feed_list):
+                    if response.name == feed[0]:
+                        self.feed_list.remove(self.feed_list.get_iter(i))
+                        break
+            iter = self.feed_list.append([response.name, response.uri])
+            self.view.get_selection().select_iter(iter)  # Selects the feed just added.
 
     def attempt_selection(self, selector, iter):
         # TODO: This is emitting a GTK-Critical error when it goes wrong, think of another way to probe?
@@ -252,6 +266,7 @@ class FeedsPreferences(PreferencesCategory):
         self.choices = OrderedDict()
         for p in self.feed_list:
             self.choices[p[0]] = p[1]
+        return self.choices
 
 class FiltrationPreferences(PreferencesCategory):
     def __init__(self, preferences):

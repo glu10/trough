@@ -114,17 +114,11 @@ class Trough(Gtk.Window):
 
     def on_add_clicked(self, widget):
         dialog = AddFeed(self)
-        response = dialog.run()
-
-        # TODO: Fix this hack by creating a custom dialog with the OK button linked to a function that verifies info.
-        while not (response == Gtk.ResponseType.CANCEL or response == Gtk.ResponseType.NONE or (
-                response == Gtk.ResponseType.OK and dialog.add_entry(self.config))):
-            response = dialog.run()
-        dialog.destroy()
-
-        # Do a convenience refresh
-        if response == Gtk.ResponseType.OK:
-            self.on_refresh_clicked(None)
+        response = dialog.get_response(self.config.feeds())
+        # TODO: When the feeds are changed to an actual model the overwrite case has to be handled here.
+        if response:
+            self.config.add_feed(response.name, response.uri)
+            self.on_refresh_clicked(None)  # Do a convenience refresh
 
     def on_preferences_clicked(self, widget):
         pw = PreferencesWindow(self, self.config)

@@ -18,17 +18,15 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-import feedparser
-
 from gi.repository import Gtk
-import dialogs
+from collections import OrderedDict
+import utilityFunctions
+
 
 class AddFeed(Gtk.Dialog):
-
     def __init__(self, parent):
         Gtk.Dialog.__init__(self, "Add Feed", parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                                           Gtk.STOCK_OK, Gtk.ResponseType.OK))
-
         self.set_default_size(150, 100)
         box = self.get_content_area()
 
@@ -45,6 +43,24 @@ class AddFeed(Gtk.Dialog):
         self.show_all()
         self.error_label.hide()  # Is shown only if the information entered isn't complete.
 
+    def get_response(self, feed_container):
+        """
+        :param feed_container: Must be a dict or Gtk.ListStore
+        :return: AddFeedResponse containing the feed information, or None if the process was abandoned by the user.
+        """
+        # TODO: Fix this hacky function by creating a custom dialog with the OK button linked to a function that verifies info.
+        return_val = None
+        while True:
+            response = self.run()
+            if response == Gtk.ResponseType.OK:
+                return_val = self.verify_entries(feed_container)
+                if return_val:
+                    break
+            elif response == Gtk.ResponseType.CANCEL or response == Gtk.ResponseType.NONE:
+                break
+        self.destroy()
+        return return_val
+
     @staticmethod
     def add_labeled_entry(text, grid, width_entry):
         label = Gtk.Label(text, xalign=0)
@@ -53,7 +69,11 @@ class AddFeed(Gtk.Dialog):
         grid.attach_next_to(entry, label, Gtk.PositionType.RIGHT, width_entry, 1)
         return entry
 
-    def add_entry(self, config):
+    def verify_entries(self, feed_container):
+        """
+        :param feed_container: Must be a dict or Gtk.ListStore
+        :return: AddFeedResponse containing the feed information, or None if the process was abandoned by the user.
+        """
         name = self.name_entry.get_text()
         uri = self.uri_entry.get_text()
 
@@ -63,22 +83,45 @@ class AddFeed(Gtk.Dialog):
                 if not uri.startswith("http"):
                     uri = "http://" + uri
 
-            try:
-                feedparser.parse(uri)  # This call is purely to try to catch problems before the feed is added.
-            except TypeError:
-                if 'drv_libxml2' in feedparser.PREFERRED_XML_PARSERS:
-                    feedparser.PREFERRED_XML_PARSERS.remove('drv_libxml2')
-                feedparser.parse(uri)
+            content = utilityFunctions.feedparser_parse(uri)
 
-            if config.add_feed(name, uri):
-                return True
-            elif dialogs.decision_popup(self, "Name of feed already exists, overwrite?", ""):
-                    config.add_feed(name, uri, overwrite=True)
-                    return True
+            warning = ""
+            no_items = not content
+            already_exists = self.check_existence(name, feed_container)
+
+            if no_items and already_exists:
+                warning = "The feed named \"" + name + "\" already exists and " \
+                          + "the URI \"" + uri + "\" returned no valid RSS items."
+            elif no_items:
+                warning = "The URI \"" + uri + "\" returned no valid RSS items."
+            elif already_exists:
+                warning = "The feed name " + name + " already exists."
+
+            if not warning or utilityFunctions.decision_popup(self, warning + " Add the feed anyway?", ""):
+                return AddFeedResponse(name, uri, already_exists)
             else:
-                return False
+                return None
 
         else:
             self.error_label.show()
 
         return False
+
+
+    def check_existence(self, name, feed_container):
+        if type(feed_container) in (dict, OrderedDict):
+            return name in feed_container
+        elif type(feed_container) == Gtk.ListStore:
+            for row in feed_container:
+                if row[0] == name:
+                    return True
+            return False
+        else:
+            raise RuntimeError("An invalid feed list container of type " + str(type(feed_container)) + " was passed to AddFeed.")
+
+class AddFeedResponse:
+    """ Organizes the response information in an easy format """
+    def __init__(self, name, uri, overwrite):
+        self.name = name
+        self.uri = uri
+        self.overwrite = overwrite

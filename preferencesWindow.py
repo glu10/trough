@@ -32,7 +32,7 @@ class PreferencesWindow(Gtk.Dialog):
 
         self.preferences_categories = [
                                        AppearancePreferences(self.preferences),
-                                       FeedsPreferences(self.preferences, config),
+                                       FeedsPreferences(self.preferences, self),
                                        FiltrationPreferences(self.preferences),
                                        RetrievalPreferences(self.preferences)
                                       ]
@@ -51,7 +51,7 @@ class PreferencesWindow(Gtk.Dialog):
         # TODO: Use the observer pattern to notify of changes
         for category in self.preferences_categories:
             self.preferences[category.label] = category.gather_choices()
-        self.config.update_preferences_file()
+        self.config.update_preferences(self.preferences)
 
         
 

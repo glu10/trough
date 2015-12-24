@@ -36,7 +36,12 @@ For one or two stories absolutely, but habitually checking sites becomes tiresom
 
 
 #### When will Trough be usable?
-Hopefully by the end of December 2015. This prediction will be updated if things change.
+Hopefully by the end of ~~December 2015~~ January 2016. This prediction will be updated if things change.
+
+**Update:** Apologies for the delay of the prediction, my busy November set things back and I want to take the time to
+ program things correctly. Core functionality is already present, but it is a little rough around the edges. If you want
+ to run things yourself, place all the python files in a single directory and run trough.py. Note that the program
+ stores a preferences file at ~/.config/trough/preferences.json
 
 
 #### When will Trough be stable?

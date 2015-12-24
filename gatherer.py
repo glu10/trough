@@ -18,9 +18,9 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-import feedparser
 import requests
 import re
+import utilityFunctions
 
 from scraping import select_rule
 from item import Item
@@ -37,49 +37,46 @@ class Gatherer:
         else:
             return None
 
-    #TODO: Error checking, temp variable collection used to mitigate blowing up current list.
     def collect(self):
         collection = list()
 
-        for label, uri in self.config.feeds.items():
+        feeds = self.config.feeds()
 
-            try:
-                content = feedparser.parse(uri)  # Should actually cache the feed, then only update if it's out of date.
-            except TypeError:
-                if 'drv_libxml2' in feedparser.PREFERRED_XML_PARSERS:
-                    feedparser.PREFERRED_XML_PARSERS.remove('drv_libxml2')
-                content = feedparser.parse(uri)
+        if not feeds:  # If there are no feeds, don't gather anything because there isn't anything to gather.
+            pass
 
-            for entry in content['entries']:
+        for label, uri in feeds.items():
 
-                keys = list(entry.keys())
+            content = utilityFunctions.feedparser_parse(uri)
 
-                title = ""
-                description = ""
-                link = ""
+            if content:
+                for entry in content['entries']:
+                    keys = list(entry.keys())
 
-                if 'description' in keys:
-                    description = entry['description']
-                elif 'summary' in keys:
-                    description = entry['summary']
+                    title = ""
+                    description = ""
+                    link = ""
 
-                if 'title' in keys:
-                    title = entry['title']
+                    if 'description' in keys:
+                        description = entry['description']
+                    elif 'summary' in keys:
+                        description = entry['summary']
 
-                if 'link' in keys:
-                    link = entry['link']
+                    if 'title' in keys:
+                        title = entry['title']
 
-                if not title and not description and not link:
-                    print('WARNING: The following entry with label ' + label +
-                          ' has no title, description, or link. Skipped.' + str(entry))
-                    continue
+                    if 'link' in keys:
+                        link = entry['link']
 
-                item = Item(label, title, self.description_cleanup(description), link)
-                collection.append(item)
+                    if not title and not description and not link:
+                        print('WARNING: The following entry with label ' + label +
+                              ' has no title, description, or link. Skipped.' + str(entry))
+                        continue
 
-        if collection is not None:
-            self.collected_items = collection
+                    item = Item(label, title, self.description_cleanup(description), link)
+                    collection.append(item)
 
+        self.collected_items = collection
         return self.collected_items
 
     @staticmethod

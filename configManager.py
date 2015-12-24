@@ -32,7 +32,6 @@ class ConfigManager:
         self.config_home = os.path.join(os.path.expanduser("~"), ".config", "trough")
         self.preferences_file = "preferences.json"
         self.preferences = self.default_preferences()
-        self.feeds = self.preferences['Feeds']  # TODO: Clean this up, self.feeds is assumed in other files
 
     def default_preferences(self):
         preferences = OrderedDict()
@@ -81,13 +80,11 @@ class ConfigManager:
         p['Scraping Strategy'] = 'Individual'  # By Feed/Individual/On Refresh
         return p
 
-
     def load_config(self):
         self.ensure_directory_exists()
         self.preferences = self.load_file(self.preferences_file, self.preferences)
         if not self.preferences['Feeds']:
             self.preferences['Feeds'] = OrderedDict()
-        self.feeds = self.preferences['Feeds']
 
     # If the configuration directory doesn't exist, try to make it.
     # TODO: Handle permission error? Not sure if necessary
@@ -98,22 +95,22 @@ class ConfigManager:
             if exception.errno != errno.EEXIST:
                 raise
 
-    def add_feed(self, name, uri, overwrite=False):
-        if name in self.feeds and not overwrite:
-            return False
-        else:
-            self.preferences['Feeds'][name] = uri
-            self.update_preferences_file()
-            return True
+    def feeds(self):
+        return self.preferences['Feeds']
+
+    def add_feed(self, name, uri):
+        self.preferences['Feeds'][name] = uri
+        self.update_preferences(self.preferences)
 
     def update_file(self, filename, data):
         file_path = os.path.join(self.config_home, filename)
         with open(file_path, 'w') as data_file:
             json.dump(data, data_file)
 
-    def update_preferences_file(self):
+    def update_preferences(self, preferences):
         """ Convenience function """
-        self.update_file(self.preferences_file, self.preferences)
+        self.update_file(self.preferences_file, preferences)
+        self.preferences = preferences
 
     # Check if the specified file exists, and if it doesn't make a file with the default configuration
     def load_file(self, filename, defaults):
