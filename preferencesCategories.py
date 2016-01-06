@@ -22,6 +22,8 @@ from abc import ABCMeta, abstractmethod
 from gi.repository import Gtk, Gdk, Gio
 from collections import OrderedDict
 from addFeed import AddFeed
+import utilityFunctions
+from configManager import ConfigManager
 
 
 # NOT FINISHED
@@ -71,33 +73,59 @@ class AppearancePreferences(PreferencesCategory):
     """
     Views (Single/Double/Triple)
     Fonts (Category/Headline/Story)
-    Colors (Font Color/Background Color)
+    Colors (Font Color/Background Color/Selection Color/Selection Background Color)
+    Reset to Defaults Button
     """
-    def __init__(self, preferences):
+    def __init__(self, parent, preferences):
         super().__init__(preferences, 'Appearance')
+        self.parent = parent
+
+        self.view_box = None
+
+        self.font_idents = ['Category Font', 'Headline Font', 'Story Font']
+        self.font_buttons = []
+
+        self.color_idents = ['Font Color', 'Background Color', 'Selection Font Color', 'Selection Background Color']
+        self.color_buttons = []
+
 
     def create_display_area(self):
         grid = Gtk.Grid(row_spacing=3, column_spacing=7, orientation=Gtk.Orientation.VERTICAL)
 
         # View selection
         grid.add(self.bold_label('View'))
-        grid.add(self.view_combo_box())
+        self.view_box = self.view_combo_box()
+        grid.add(self.view_box)
 
         # Font selection
         grid.add(self.bold_label('Fonts'))
-        panes = ['Category Font', 'Headline Font', 'Story Font']
-        for pane in panes:
-            label = self.descriptor_label(pane)
+
+        for font in self.font_idents:
+            label = self.descriptor_label(font)
             grid.add(label)
-            grid.attach_next_to(self.font_button(pane), label, Gtk.PositionType.RIGHT, 1, 1)
+            fb = self.font_button(font)
+            grid.attach_next_to(fb, label, Gtk.PositionType.RIGHT, 1, 1)
+            self.font_buttons.append(fb)
 
         # Font Colors
         grid.add(self.bold_label('Colors'))
-        color_idents = ['Font Color', 'Background Color']
-        for c in color_idents:
+
+        for c in self.color_idents:
             label = self.descriptor_label(c)
             grid.add(label)
-            grid.attach_next_to(self.color_button(c), label, Gtk.PositionType.RIGHT, 1, 1)
+            cb = self.color_button(c, c == 'Selection Background Color')
+            grid.attach_next_to(cb, label, Gtk.PositionType.RIGHT, 1, 1)
+            self.color_buttons.append(cb)
+
+        # Reset to Defaults Button
+
+        reset_button = Gtk.Button(label="Reset to defaults")
+        reset_button.connect("clicked", self.confirm_and_reset_defaults)
+
+        # The empty labels are just space fillers for the reset to defaults button
+        grid.add(Gtk.Label(""))
+        grid.add(reset_button)
+        grid.add(Gtk.Label(""))
 
         return grid
 
@@ -118,18 +146,37 @@ class AppearancePreferences(PreferencesCategory):
         cb.connect('changed', self.view_switched)
         return cb
 
-    def view_switched(self, combo):  # button needed?
+    def view_switched(self, combo):
         self.choices['View'] = combo.get_active_text()
 
-    def color_button(self, name):
+    def color_button(self, name, use_alpha):
         rgba = Gdk.RGBA()
         rgba.parse(self.choices[name])
         cb = Gtk.ColorButton.new_with_rgba(rgba)
+        cb.set_use_alpha(use_alpha)
         cb.connect('color-set', self.color_switched, name)
         return cb
 
     def color_switched(self, cc, name):
         self.choices[name] = cc.get_rgba().to_string()
+
+    def confirm_and_reset_defaults(self, widget):
+        if utilityFunctions.decision_popup(self.parent, 'Reset Appearance to Defaults',
+                          'Are you sure you want to reset your Appearance preferences to default values?'):
+            self.choices = ConfigManager.default_appearance_preferences()
+
+            self.view_box.set_active_id(self.choices['View'])
+
+            for fb, fi in zip(self.font_buttons, self.font_idents):
+                print(self.choices[fi])
+                fb.set_font_name(self.choices[fi])
+                fb.emit("font_set")
+
+            for cb, ci in zip(self.color_buttons, self.color_idents):
+                cb.set_rgba(utilityFunctions.string_to_RGBA(self.choices[ci]))
+
+
+
 
 class FeedsPreferences(PreferencesCategory):
     """

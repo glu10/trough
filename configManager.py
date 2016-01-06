@@ -33,22 +33,24 @@ class ConfigManager:
         self.preferences_file = "preferences.json"
         self.preferences = self.default_preferences()
 
-    def default_preferences(self):
+    @staticmethod
+    def default_preferences():
         preferences = OrderedDict()
-        preferences['Appearance'] = self.default_appearance_preferences()
-        preferences['Feeds'] = self.default_feeds_preferences()
-        preferences['Filtration'] = self.default_filtration_preferences()
-        preferences['Retrieval'] = self.default_retrieval_preferences()
+        preferences['Appearance'] = ConfigManager.default_appearance_preferences()
+        preferences['Feeds'] = ConfigManager.default_feeds_preferences()
+        preferences['Filtration'] = ConfigManager.default_filtration_preferences()
+        preferences['Retrieval'] = ConfigManager.default_retrieval_preferences()
         return preferences
 
-    def default_appearance_preferences(self):
+    @staticmethod
+    def default_appearance_preferences():
         p = OrderedDict()
         p['View'] = 'Double'
 
         # TODO: Investigate if these font strings are reliably set among different DEs/WMs
         gs = Gio.Settings('org.gnome.desktop.interface')
         default_font = gs.get_string('font-name')
-        # monospace_font = gs.get_string('monospace-font-name'
+        # monospace_font = gs.get_string('monospace-font-name')
         document_font = gs.get_string('document-font-name')
 
         p['Category Font'] = default_font
@@ -57,12 +59,16 @@ class ConfigManager:
 
         p['Font Color'] = 'rgba(0, 0, 0, 1.0)'  # RGBA for solid black.
         p['Background Color'] = 'rgba(255, 255, 255, 1.0)'  # RGBA for solid white
+        p['Selection Font Color'] = 'rgba(255, 255, 255, 1.0)'  # RGBA for solid white
+        p['Selection Background Color'] = 'rgba(81, 126, 173, 1.0)'  # RGBA for medium-dark blue
         return p
 
-    def default_feeds_preferences(self):
+    @staticmethod
+    def default_feeds_preferences():
         return OrderedDict()
 
-    def default_filtration_preferences(self):  # TODO: Support for user-supplied regex expressions
+    @staticmethod
+    def default_filtration_preferences():  # TODO: Support for user-supplied regex expressions
         p = OrderedDict()
         p['Filtered Links'] = list()
         p['Filtered Titles'] = list()
@@ -71,7 +77,8 @@ class ConfigManager:
         p['FilteredHighlight'] = 'rgba(128, 128, 128, .5)'  # RGBA values (for a slightly translucent gray)
         return p
 
-    def default_retrieval_preferences(self):  # TODO: Support for auto-refresh on a feed-by-feed basis would be nice
+    @staticmethod
+    def default_retrieval_preferences():  # TODO: Support for auto-refresh on a feed-by-feed basis would be nice
         p = OrderedDict()
         p['Refresh When Opened'] = True
         p['Auto-refresh'] = False
@@ -79,6 +86,18 @@ class ConfigManager:
         p['Auto-refresh Unit'] = "Minute"      # Second/Hour/Minute/Day
         p['Scraping Strategy'] = 'Individual'  # By Feed/Individual/On Refresh
         return p
+
+    def appearance_preferences(self):
+        return self.preferences['Appearance']
+
+    def feeds_preferences(self):
+        return self.preferences['Feeds']
+
+    def filtration_preferences(self):
+        return self.preferences['Filtration']
+
+    def retrieval_preferences(self):
+        return self.preferences['Retrieval']
 
     def load_config(self):
         self.ensure_directory_exists()

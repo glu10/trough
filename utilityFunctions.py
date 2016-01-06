@@ -24,7 +24,7 @@ The functions are being declared here for consistency's sake.
 """
 
 import feedparser
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
 def feedparser_parse(uri):
     """
@@ -64,3 +64,9 @@ def decision_popup(window, first, second):
         return False
 
 """ END GENERIC DIALOGS """
+
+def string_to_RGBA(rgba_string):
+            rgba = Gdk.RGBA()
+            if not rgba.parse(rgba_string):
+                raise RuntimeError('RGBA parsing error when parsing ' + rgba_string)
+            return rgba

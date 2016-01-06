@@ -75,6 +75,9 @@ class SingleNews(NewsView):
             self.stories.append(story)
             self.top_vbox.pack_start(story.clickable_headline, False, True, 0)
 
+    def update_appearance(self, appearance_dict):
+        pass  # TODO: Would have to iterate over items and apply new styles? Do after redesigning this class.
+
 class ClickableStory:
     """ Content of an RSS entry. Possibly supplemented with scraped information. Configurable appearance. """
     def __init__(self, item, parent):

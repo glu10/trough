@@ -24,14 +24,15 @@ from preferencesCategories import *
 class PreferencesWindow(Gtk.Dialog):
     def __init__(self, parent, config):
         Gtk.Dialog.__init__(self, 'Preferences', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                                          Gtk.STOCK_OK, Gtk.ResponseType.OK))
+                                                             Gtk.STOCK_OK, Gtk.ResponseType.OK))
         self.config = config
         self.preferences = config.preferences
         self.set_default_size(300, 300)
         self.notebook = Gtk.Notebook()
+        self.parent = parent
 
         self.preferences_categories = [
-                                       AppearancePreferences(self.preferences),
+                                       AppearancePreferences(self, self.preferences),
                                        FeedsPreferences(self.preferences, self),
                                        FiltrationPreferences(self.preferences),
                                        RetrievalPreferences(self.preferences)
@@ -52,6 +53,10 @@ class PreferencesWindow(Gtk.Dialog):
         for category in self.preferences_categories:
             self.preferences[category.label] = category.gather_choices()
         self.config.update_preferences(self.preferences)
+
+        view = self.parent.current_view()
+        # TODO: Once each is implemented, iterate over preferences_categories instead of hardcoding each
+        view.update_appearance(self.preferences['Appearance'])
 
         
 

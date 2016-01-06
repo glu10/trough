@@ -22,6 +22,7 @@ from gi.repository import Gtk, Gdk
 from gi.repository import Pango
 from newsView import NewsView
 from textFormat import TextFormat
+from utilityFunctions import string_to_RGBA
 
 class SplitNews(NewsView):
     """ GUI component where headlines and story contents are split apart """
@@ -37,6 +38,7 @@ class SplitNews(NewsView):
         self.tree_view = self.create_tree_view(self.headline_store)
         self.headline_scroll = self.create_headline_box(self.tree_view)
         self.text_scroll, self.text_view = self.create_text_box()
+        self.update_appearance(config.appearance_preferences())
 
         self.top_pane.pack1(self.headline_scroll, resize=True, shrink=False)  # Left
         self.top_pane.pack2(self.text_scroll, resize=True, shrink=False)  # Right
@@ -68,7 +70,7 @@ class SplitNews(NewsView):
         text_scroll = Gtk.ScrolledWindow()
         text_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
         text_view = Gtk.TextView()
-        text_view.set_size_request(200,200)
+        text_view.set_size_request(200, 200)
         text_view.set_editable(False)
         text_view.set_cursor_visible(False)
         tb = text_view.get_buffer()
@@ -110,6 +112,25 @@ class SplitNews(NewsView):
                 title = item.title[:threshold-3] + "..."
 
             self.headline_store.append(list([item.label, title, x]))
+
+    def update_appearance(self, appearance_dict):
+
+        # TODO: Deprecated override functions should be replaced with Gtk.CssProvider, but not sure how to do that yet.
+
+        def font(font_string):
+            return Pango.FontDescription(font_string)
+
+        self.text_view.override_font(font(appearance_dict['Story Font']))
+        self.tree_view.override_font(font(appearance_dict['Headline Font']))
+
+        for v in (self.text_view, self.tree_view):
+            v.override_color(Gtk.StateFlags.NORMAL, string_to_RGBA(appearance_dict['Font Color']))
+            v.override_background_color(Gtk.StateFlags.NORMAL, string_to_RGBA(appearance_dict['Background Color']))
+
+            # When text is selected, make it white text with a blue background.
+            v.override_color(Gtk.StateFlags.SELECTED, string_to_RGBA(appearance_dict['Selection Font Color']))
+            v.override_background_color(Gtk.StateFlags.SELECTED, string_to_RGBA(appearance_dict['Selection Background Color']))
+
 
     def show_new_article(self, selection):
         if not self.refreshing and selection:

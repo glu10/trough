@@ -65,3 +65,9 @@ class NewsView(metaclass=ABCMeta):
         """
         Clear the current contents of the view and populate them again.
         """
+
+    @abstractmethod
+    def update_appearance(self, appearance_dict):
+        """
+        Apply the appropriate appearance preferences to the current view
+        """
