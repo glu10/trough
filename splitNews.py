@@ -22,7 +22,7 @@ from gi.repository import Gtk, Gdk
 from gi.repository import Pango
 from newsView import NewsView
 from textFormat import TextFormat
-from utilityFunctions import string_to_RGBA
+import utilityFunctions
 
 class SplitNews(NewsView):
     """ GUI component where headlines and story contents are split apart """
@@ -34,16 +34,17 @@ class SplitNews(NewsView):
 
         # GUI components
         self.top_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self.headline_store = Gtk.ListStore(str, str, int)
-        self.tree_view = self.create_tree_view(self.headline_store)
-        self.headline_scroll = self.create_headline_box(self.tree_view)
-        self.text_scroll, self.text_view = self.create_text_box()
+        self.item_store = Gtk.ListStore(str, str, int)
+        self.headline_view = self.create_headline_view(self.item_store)
+        self.headline_scroll = self.create_headline_box(self.headline_view, 400, 200)
+        self.story_scroll, self.story_view = self.create_story_box()
+
         self.update_appearance(config.appearance_preferences())
 
         self.top_pane.pack1(self.headline_scroll, resize=True, shrink=False)  # Left
-        self.top_pane.pack2(self.text_scroll, resize=True, shrink=False)  # Right
+        self.top_pane.pack2(self.story_scroll, resize=True, shrink=False)  # Right
 
-    def create_tree_view(self, headline_store):
+    def create_headline_view(self, headline_store):
         tree_view = Gtk.TreeView(model=headline_store)
         tree_view.get_selection().connect("changed", self.show_new_article)
 
@@ -58,30 +59,23 @@ class SplitNews(NewsView):
         return tree_view
 
     @staticmethod
-    def create_headline_box(tree_view):
+    def create_headline_box(tree_view, width, height):
         headline_scroll = Gtk.ScrolledWindow()
-        headline_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
-        headline_scroll.set_size_request(100, 100)
+        headline_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.ALWAYS)
+        headline_scroll.set_size_request(width, height)
         headline_scroll.add(tree_view)
         return headline_scroll
 
     @staticmethod
-    def create_text_box():
+    def create_story_box():
         text_scroll = Gtk.ScrolledWindow()
         text_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
-        text_view = Gtk.TextView()
-        text_view.set_size_request(200, 200)
-        text_view.set_editable(False)
-        text_view.set_cursor_visible(False)
+        text_view = Gtk.TextView(editable=False, cursor_visible=False)
+        text_view.set_size_request(500, 200)
         tb = text_view.get_buffer()
-        tb.insert(tb.get_end_iter(), " "*200)  # Placeholder
+        #tb.insert(tb.get_end_iter(), " "*300)  # Placeholder
         text_scroll.add(text_view)
         return text_scroll, text_view
-
-    def destroy_display(self):
-        for child in self.top_pane:
-            child.destroy()
-        self.top_pane.destroy()
 
     def top_level(self):
         return self.top_pane
@@ -89,13 +83,13 @@ class SplitNews(NewsView):
     def change_position(self, delta):
         """ Switches keyboard focus between left and right pane """
         if delta < 0:
-            self.tree_view.grab_focus()
+            self.headline_view.grab_focus()
         else:
-            self.text_view.grab_focus()
+            self.story_view.grab_focus()
 
     def refresh(self, items):
         self.refreshing = True  # Toggling boolean as a hack to cover up the selection changed signal during the clear
-        self.headline_store.clear()
+        self.item_store.clear()
         self.populate(items)
         self.refreshing = False
 
@@ -106,37 +100,17 @@ class SplitNews(NewsView):
 
     def populate(self, items):
         for x, item in enumerate(items):
-            title = item.title
-            threshold = 100
-            if len(item.title) > threshold: #TODO: Hardcoding this is poor form, make a more dynamic solution
-                title = item.title[:threshold-3] + "..."
+            title = utilityFunctions.shorten_title(item.title)
+            self.item_store.append(list([item.label, title, x]))
 
-            self.headline_store.append(list([item.label, title, x]))
-
-    def update_appearance(self, appearance_dict):
-
-        # TODO: Deprecated override functions should be replaced with Gtk.CssProvider, but not sure how to do that yet.
-
-        def font(font_string):
-            return Pango.FontDescription(font_string)
-
-        self.text_view.override_font(font(appearance_dict['Story Font']))
-        self.tree_view.override_font(font(appearance_dict['Headline Font']))
-
-        for v in (self.text_view, self.tree_view):
-            v.override_color(Gtk.StateFlags.NORMAL, string_to_RGBA(appearance_dict['Font Color']))
-            v.override_background_color(Gtk.StateFlags.NORMAL, string_to_RGBA(appearance_dict['Background Color']))
-
-            # When text is selected, make it white text with a blue background.
-            v.override_color(Gtk.StateFlags.SELECTED, string_to_RGBA(appearance_dict['Selection Font Color']))
-            v.override_background_color(Gtk.StateFlags.SELECTED, string_to_RGBA(appearance_dict['Selection Background Color']))
-
+    def text_containing_widgets(self):
+        return self.headline_view, self.story_view
 
     def show_new_article(self, selection):
         if not self.refreshing and selection:
             model, iter = selection.get_selected()
             if model:
                 self.last_item_index = model[iter][2]
-                TextFormat.full_story(self.gatherer.item(self.last_item_index), self.text_view)
+                TextFormat.full_story(self.gatherer.item(self.last_item_index), self.story_view)
 
 

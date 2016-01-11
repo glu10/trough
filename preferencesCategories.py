@@ -168,7 +168,6 @@ class AppearancePreferences(PreferencesCategory):
             self.view_box.set_active_id(self.choices['View'])
 
             for fb, fi in zip(self.font_buttons, self.font_idents):
-                print(self.choices[fi])
                 fb.set_font_name(self.choices[fi])
                 fb.emit("font_set")
 
@@ -184,9 +183,9 @@ class FeedsPreferences(PreferencesCategory):
     I'm going to have feed information be edited through a new dialog (although that is kind of annoying)
     because it simplifies how to catch/verify changes.
     """
-    def __init__(self, preferences, window):
+    def __init__(self, parent, preferences):
         super().__init__(preferences, 'Feeds')
-        self.window = window
+        self.parent = parent
         self.info_box = self.info_placeholder()
         self.feed_list = Gtk.ListStore(str, str)
         self.view = Gtk.TreeView(model=self.feed_list)
@@ -286,7 +285,7 @@ class FeedsPreferences(PreferencesCategory):
         """
         Note: This only adds the feed to the temporary feed list in the preferences window.
         """
-        dialog = AddFeed(self.window)
+        dialog = AddFeed(self.parent)
         response = dialog.get_response(self.feed_list)
         if response:
             if response.overwrite:

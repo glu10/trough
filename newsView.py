@@ -20,6 +20,8 @@
 
 from abc import ABCMeta, abstractmethod
 from webbrowser import open_new_tab
+from gi.repository import Gtk, Pango
+from utilityFunctions import string_to_RGBA
 
 class NewsView(metaclass=ABCMeta):
 
@@ -29,11 +31,14 @@ class NewsView(metaclass=ABCMeta):
         Return the top-level GUI container of this component
         """
 
-    @abstractmethod
     def destroy_display(self):
         """
         Destroy the widgets related to this display.
         """
+        top = self.top_level()
+        for child in top:
+            child.destroy()
+        top.destroy()
 
     @abstractmethod
     def change_position(self, delta):
@@ -67,7 +72,33 @@ class NewsView(metaclass=ABCMeta):
         """
 
     @abstractmethod
+    def text_containing_widgets(self):
+        """
+        Return the widgets (ordered from left to right according to appearance to the user) that are directly displaying
+        text to the user. Used for focusing and font updating.
+        """
+
     def update_appearance(self, appearance_dict):
         """
         Apply the appropriate appearance preferences to the current view
         """
+        fws = self.text_containing_widgets()  # Font widgets
+        if not fws or len(fws) > 3:
+            return
+
+        keys = ['Category Font', 'Headline Font', 'Story Font']
+        keys = keys[len(keys)-len(fws):]
+
+        for i, fw in enumerate(fws):
+            fw.override_font(Pango.FontDescription(appearance_dict[keys[i]]))
+            fw.override_color(Gtk.StateFlags.NORMAL, string_to_RGBA(appearance_dict['Font Color']))
+            fw.override_background_color(Gtk.StateFlags.NORMAL, string_to_RGBA(appearance_dict['Background Color']))
+
+            # When text is selected, use the following colors
+            fw.override_color(Gtk.StateFlags.SELECTED, string_to_RGBA(appearance_dict['Selection Font Color']))
+            fw.override_background_color(Gtk.StateFlags.SELECTED, string_to_RGBA(appearance_dict['Selection Background Color']))
+
+
+
+
+

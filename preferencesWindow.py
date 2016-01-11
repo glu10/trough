@@ -33,7 +33,7 @@ class PreferencesWindow(Gtk.Dialog):
 
         self.preferences_categories = [
                                        AppearancePreferences(self, self.preferences),
-                                       FeedsPreferences(self.preferences, self),
+                                       FeedsPreferences(self, self.preferences),
                                        FiltrationPreferences(self.preferences),
                                        RetrievalPreferences(self.preferences)
                                       ]
@@ -54,9 +54,10 @@ class PreferencesWindow(Gtk.Dialog):
             self.preferences[category.label] = category.gather_choices()
         self.config.update_preferences(self.preferences)
 
-        view = self.parent.current_view()
         # TODO: Once each is implemented, iterate over preferences_categories instead of hardcoding each
+        view = self.parent.switch_view()
         view.update_appearance(self.preferences['Appearance'])
+
 
         
 

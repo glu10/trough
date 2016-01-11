@@ -27,25 +27,22 @@ from textFormat import TextFormat
 
 class SingleNews(NewsView):
     """ GUI consisting of a single list of expandable headlines """
-    def __init__(self, config):
+    def __init__(self, config, gatherer):
         self.config = config
+        self.gatherer = gatherer
         self.stories = list()
         self.last_reveal = None
         self.last_story_position = -1
         self.top_vbox, self.scroll_window = self.create_display_window()
 
     def create_display_window(self):
-        top_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        top_vbox.margin_end = 30
-        top_vbox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(255, 255, 255, 1))
-
-        scroll_window = Gtk.ScrolledWindow()
-        scroll_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
-        scroll_window.add(top_vbox)
-        return top_vbox, scroll_window
+        top_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, margin_end=30)
+        sw = Gtk.ScrolledWindow(hscrollbar_policy=Gtk.PolicyType.NEVER, vscrollbar_policy=Gtk.PolicyType.ALWAYS)
+        sw.add(top_vbox)
+        return top_vbox, sw
 
     def top_level(self):
-        return self.top_vbox
+        return self.scroll_window
 
     def change_position(self, delta):
         """ Up/Down arrow key navigation among headlines"""
@@ -75,6 +72,9 @@ class SingleNews(NewsView):
             self.stories.append(story)
             self.top_vbox.pack_start(story.clickable_headline, False, True, 0)
 
+    def text_containing_widgets(self):
+        return None
+
     def update_appearance(self, appearance_dict):
         pass  # TODO: Would have to iterate over items and apply new styles? Do after redesigning this class.
 
@@ -91,14 +91,12 @@ class ClickableStory:
         self.clickable_headline, self.reveal = self.clickable_headline(self.headline_box)
 
     def setup_label(self, item):
-        label = Gtk.Label()
-        label.set_justify(Gtk.Justification.LEFT)
+        label = Gtk.Label(justify=Gtk.Justification.LEFT)
         label.set_markup("<span size=\"xx-small\">" + item.label + "</span>")
         return label
 
     def setup_title(self, item):
-        title = Gtk.Label()
-        title.set_justify(Gtk.Justification.LEFT)
+        title = Gtk.Label(justify=Gtk.Justification.LEFT)
         title.set_markup("<span size=\"larger\" weight=\"bold\" background=\"#FFFFFF\" >" + item.title + "</span>")
         return title
 
@@ -110,15 +108,11 @@ class ClickableStory:
         return headline
 
     def clickable_headline(self, headline_box):
-        event = Gtk.EventBox()
+        event = Gtk.EventBox(visible_window=True, events=Gdk.EventMask.BUTTON_PRESS_MASK)
         event.add(headline_box)
-        event.set_events(Gdk.EventMask.BUTTON_PRESS_MASK)
         event.connect("button_press_event", self.toggle_show_story)
-        event.set_visible_window(True)
 
-        reveal = Gtk.Revealer()
-        reveal.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
-        reveal.set_transition_duration(100)
+        reveal = Gtk.Revealer(transition_type=Gtk.RevealerTransitionType.SLIDE_DOWN, transition_duration=100)
 
         clickable_headline = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         clickable_headline.pack_start(event, True, True, 0)
@@ -130,10 +124,10 @@ class ClickableStory:
         if self.reveal.get_child() is None:  # Is this the first time this news item has been clicked?
             self.reveal.add(TextFormat.full_story(self.item))  # Set up the article text
             self.clickable_headline.show_all()
-
-        expansion = not self.reveal.get_reveal_child()  # Is the story going to be revealed?
-
+        self.reveal.set_reveal_child(not self.reveal.get_reveal_child())
+"""
         # Stylistic choice: ensures that only one story is ever expanded
+        expansion =   # Is the story going to be revealed?
         if expansion:
             lr = self.parent.last_reveal
             if lr is None:
@@ -146,4 +140,5 @@ class ClickableStory:
         else:
             self.parent.last_reveal = None
 
-        self.reveal.set_reveal_child(expansion)
+
+"""

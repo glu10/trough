@@ -70,3 +70,9 @@ def string_to_RGBA(rgba_string):
             if not rgba.parse(rgba_string):
                 raise RuntimeError('RGBA parsing error when parsing ' + rgba_string)
             return rgba
+
+def shorten_title(title):
+    threshold = 100 # TODO: remove this hardcode with something more dynamic
+    if len(title) > threshold:
+        title = title[:threshold-3] + "..."
+    return title

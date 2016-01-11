@@ -1,21 +1,17 @@
 #!/usr/bin/env python3
 """
     Trough - a GTK+ RSS news reader
-
     Copyright (C) 2015 Andrew Asp
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see {http://www.gnu.org/licenses/}.
-
     Trough homepage: https://github.com/glu10/trough
 """
 
@@ -26,6 +22,7 @@ from addFeed import AddFeed
 from configManager import ConfigManager
 from singleNews import SingleNews
 from splitNews import SplitNews
+from tripleNews import TripleNews
 from gatherer import Gatherer
 from preferencesWindow import PreferencesWindow
 
@@ -38,24 +35,13 @@ class Trough(Gtk.Window):
         self.config = ConfigManager()
         self.config.load_config()
         self.header_bar = self.create_header()
-        
-        # TODO: Should do the fetch in another thread or conditionally if batch fetch isn't desired
-        # TODO: The initial GUI display should definitely not be tied to the network fetch!
         self.gatherer = Gatherer(self.config)
-        self.gatherer.collect()
-
-        # Split headlines/news view
-        self.split = True  # TODO: will be in settings
-        if self.split:
-            self.splitBox = SplitNews(self.config, self.gatherer)
-            self.add(self.splitBox.top_level())
-            self.splitBox.populate(self.gatherer.collected_items)
-        else:
-            self.singleBox = SingleNews(self.config)
-            self.add(self.singleBox.top_level())
-            self.singleBox.populate(self.gatherer.collected_items)
-
+        self.current_view = None
+        self.switch_view()
         self.show_all()
+
+        self.gatherer.collect()
+        self.current_view.populate(self.gatherer.collected_items)
 
     def set_window_icon(self):
         try:
@@ -67,21 +53,30 @@ class Trough(Gtk.Window):
         except GLib.GError:  # If the icon theme doesn't have an icon for RSS it's okay, purely visual
             pass
 
-    def current_view(self):
-        if self.split:
-            return self.splitBox
-        else:
-            return self.singleBox
+    def switch_view(self):
+        view_key = self.config.appearance_preferences()['View']
+        views = {'Single': SingleNews, 'Double': SplitNews, 'Triple': TripleNews}
+        view = views[view_key]
+
+        if type(self.current_view) != view:
+            if self.current_view:
+                self.current_view.destroy_display()
+
+            self.current_view = view(self.config, self.gatherer)
+            self.add(self.current_view.top_level())
+            if self.gatherer.collected_items:
+                self.current_view.populate(self.gatherer.collected_items)
+
+            self.show_all()
+
+        return self.current_view
 
     def create_header(self):
-        header_bar = Gtk.HeaderBar()
-        header_bar.set_show_close_button(True)
-        header_bar.props.title = "Trough"
-        self.set_titlebar(header_bar)
-
+        header_bar = Gtk.HeaderBar(title="Trough", show_close_button=True)
         header_bar.pack_start(self.create_add_button())
         header_bar.pack_start(self.create_preferences_button())
         header_bar.pack_start(self.create_refresh_button())
+        self.set_titlebar(header_bar)
         return header_bar
 
     def create_add_button(self):
@@ -128,7 +123,7 @@ class Trough(Gtk.Window):
         pw.destroy()
 
     def on_refresh_clicked(self, widget):
-        self.current_view().refresh(self.gatherer.collect())
+        self.current_view.refresh(self.gatherer.collect())
 
     @staticmethod
     def do_scroll(widget, scroll):
@@ -143,18 +138,18 @@ class Trough(Gtk.Window):
         if key == "F5":
             self.on_refresh_clicked(None)
         elif key == "Left":
-            self.current_view().change_position(-1)
+            self.current_view.change_position(-1)
         elif key == "Right":
-            self.current_view().change_position(1)
+            self.current_view.change_position(1)
         elif key == "Up":
             self.do_scroll(widget, Gtk.ScrollType.STEP_BACKWARD)
         elif key == "Down":
             self.do_scroll(widget, Gtk.ScrollType.STEP_FORWARD)
         elif key == "Return":
             if event.state & Gdk.ModifierType.CONTROL_MASK:
-                self.current_view().get_then_open_link(self.gatherer)
+                self.current_view.get_then_open_link(self.gatherer)
             else:
-                self.current_view().change_position(0)
+                self.current_view.change_position(0)
         else:
             pass
 
