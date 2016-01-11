@@ -165,12 +165,17 @@ class AppearancePreferences(PreferencesCategory):
                           'Are you sure you want to reset your Appearance preferences to default values?'):
             self.choices = ConfigManager.default_appearance_preferences()
 
-            self.view_box.set_active_id(self.choices['View'])
+            # Visual Effects
+            # Set the view combo box to "Double" which is the second entry
+            model = self.view_box.get_model()
+            self.view_box.set_active_iter(model.iter_next(model.get_iter_first()))
 
+            # Set the font buttons to display the default font values
             for fb, fi in zip(self.font_buttons, self.font_idents):
                 fb.set_font_name(self.choices[fi])
                 fb.emit("font_set")
 
+            # Set the color buttons to display the default color values
             for cb, ci in zip(self.color_buttons, self.color_idents):
                 cb.set_rgba(utilityFunctions.string_to_RGBA(self.choices[ci]))
 
