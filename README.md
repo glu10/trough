@@ -62,7 +62,7 @@ Trough itself has to be downloaded or pulled from GitHub.
 `cd` to the directory where you stored Trough's source files and run `python3 trough.py`. Note that the
 program stores a preferences file at ~/.config/trough/preferences.json.
 
-If the program fails to start then you are likely just missing a dependency. If it used to work but git pull broke it,
+If the program fails to start then you are likely just missing a dependency. If it used to work but a git pull broke it,
 I probably changed something with the preferences (sorry) and you need to delete your old preferences file.
 
 If you encounter a different problem feel free to open an issue and I'll do my best to help you out.
