@@ -24,6 +24,7 @@ import utilityFunctions
 
 
 class AddFeed(Gtk.Dialog):
+    """ A Dialog for adding a new RSS feed. """
     def __init__(self, parent):
         Gtk.Dialog.__init__(self, "Add Feed", parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                                           Gtk.STOCK_OK, Gtk.ResponseType.OK))
@@ -106,7 +107,6 @@ class AddFeed(Gtk.Dialog):
             self.error_label.show()
 
         return False
-
 
     def check_existence(self, name, feed_container):
         if type(feed_container) in (dict, OrderedDict):

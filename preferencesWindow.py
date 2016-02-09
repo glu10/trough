@@ -24,20 +24,20 @@ from preferencesCategories import *
 class PreferencesWindow(Gtk.Dialog):
     def __init__(self, parent, config):
         Gtk.Dialog.__init__(self, 'Preferences', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                                             Gtk.STOCK_OK, Gtk.ResponseType.OK))
+                                                             'Save Changes', Gtk.ResponseType.OK))
         self.config = config
         self.preferences = config.preferences
-        self.set_default_size(300, 300)
-        self.notebook = Gtk.Notebook()
         self.parent = parent
+        self.set_default_size(300, 300)
 
         self.preferences_categories = [
                                        AppearancePreferences(self, self.preferences),
                                        FeedsPreferences(self, self.preferences),
                                        FiltrationPreferences(self.preferences),
-                                       RetrievalPreferences(self.preferences)
+                                       RetrievalPreferences(self.preferences),
                                       ]
 
+        self.notebook = Gtk.Notebook()
         for category in self.preferences_categories:
             self.notebook.append_page(category.create_display_area(), Gtk.Label(category.label))
 
@@ -47,9 +47,8 @@ class PreferencesWindow(Gtk.Dialog):
 
     def apply_choices(self):
         """
-        Make the selected preferences the actual preferences.
+        Apply the selected preferences to the current session, and make the selections persistent.
         """
-        # TODO: Use the observer pattern to notify of changes
         for category in self.preferences_categories:
             self.preferences[category.label] = category.gather_choices()
         self.config.update_preferences(self.preferences)

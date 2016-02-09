@@ -32,7 +32,7 @@ def feedparser_parse(uri):
     The try catch probes and attempts to mitigate the bug by switching which underlying XML parser is used.
     """
     try:
-        content = feedparser.parse(uri)  # Should actually cache the feed, then only update if it's out of date.
+        content = feedparser.parse(uri)
     except TypeError:
         if 'drv_libxml2' in feedparser.PREFERRED_XML_PARSERS:
             feedparser.PREFERRED_XML_PARSERS.remove('drv_libxml2')
@@ -72,7 +72,7 @@ def string_to_RGBA(rgba_string):
             return rgba
 
 def shorten_title(title):
-    threshold = 100 # TODO: remove this hardcode with something more dynamic
+    threshold = 100  # TODO: remove this hardcode with something more dynamic
     if len(title) > threshold:
         title = title[:threshold-3] + "..."
     return title

@@ -1,10 +1,31 @@
+"""
+    Trough - a GTK+ RSS news reader
+
+    Copyright (C) 2016 Andrew Asp
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see {http://www.gnu.org/licenses/}.
+
+    Trough homepage: https://github.com/glu10/trough
+"""
+
 from gi.repository import Gtk
 from newsView import NewsView
-from splitNews import SplitNews
+from twoPaneView import TwoPaneView
 from textFormat import TextFormat
 import utilityFunctions
+from collections import defaultdict
 
-class TripleNews(NewsView):
+class ThreePaneView(NewsView):
 
     def __init__(self, config, gatherer):
         self.config = config
@@ -14,14 +35,14 @@ class TripleNews(NewsView):
         self.label_dict = dict()
 
         self.label_store = Gtk.ListStore(str)
-        self.label_view = self.create_view(self.label_store, 'Label', 0, self.show_new_headlines)
-        self.label_scroll = SplitNews.create_headline_box(self.label_view, 20, 200)
+        self.label_view = self.create_view(self.label_store, 'Feed', 0, self.show_new_headlines)
+        self.label_scroll = TwoPaneView.create_headline_box(self.label_view, 20, 200)
 
         self.headline_store = Gtk.ListStore(str, int)
         self.headline_view = self.create_view(self.headline_store, 'Headline', 0, self.show_new_article)
-        self.headline_scroll = SplitNews.create_headline_box(self.headline_view, 300, 200)
+        self.headline_scroll = TwoPaneView.create_headline_box(self.headline_view, 300, 200)
 
-        self.story_scroll, self.story_view = SplitNews.create_story_box()
+        self.story_scroll, self.story_view = TwoPaneView.create_story_box()
 
         self.top_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self.inner_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
@@ -54,7 +75,6 @@ class TripleNews(NewsView):
             self.focused_index = changed_pos
 
     def match_label(self, model, iter, data=None):
-        print('comparing ' + str(model[iter][0]) + ' and ' + str(data))
         return model[iter][0] == data
 
     def refresh(self, items):
@@ -67,10 +87,8 @@ class TripleNews(NewsView):
         self.refreshing = False
 
     def populate(self, items):
-        self.label_dict = dict()
+        self.label_dict = defaultdict(list)
         for i, item in enumerate(items):
-            if item.label not in self.label_dict:
-                self.label_dict[item.label] = list()
             self.label_dict[item.label].append(i)
 
         for label in self.label_dict.keys():

@@ -26,6 +26,7 @@ from scraping import select_rule
 from item import Item
 
 class Gatherer:
+    """ Gatherer is a singleton responsible for handling network requests """
 
     def __init__(self, config):
         self.config = config
@@ -84,11 +85,6 @@ class Gatherer:
         description = re.sub(r'\s+', ' ', description)
         description = re.sub(r'\n\n(\n+)', '\n\n', description)
         return re.sub(r'<.*?>', '', description)
-
-    @staticmethod
-    def get_article(link):
-        article_html = requests.get(link).content
-        return select_rule(link, article_html)
 
     @staticmethod
     def get_and_set_article(item):

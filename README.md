@@ -30,19 +30,39 @@ Trough aims to take on the unmaintainable task of displaying both RSS content an
 Displaying linked content can be done through scraping, but scraping rules break and can't possibly be comprehensive.
 What's an RSS reader to do? Assume an advanced user and cede control.
 
-
 #### Isn't just using a browser easier?
 For one or two stories absolutely, but habitually checking sites becomes tiresome.
 
-
 #### When will Trough be usable?
-Hopefully by the end of ~~December 2015~~ January 2016. This prediction will be updated if things change.
-
-**Update:** Apologies for the delay of the prediction, my busy November set things back and I want to take the time to
- program things correctly. Core functionality is already present, but it is a little rough around the edges. If you want
- to run things yourself, place all the python files in a single directory and run trough.py. Note that the program
- stores a preferences file at ~/.config/trough/preferences.json
-
+"Certainly eventually." I'm going to see this project to fruition because this is a program I have been wishing for
+personally and use, but I don't want to set hard dates anymore because my schedule has been in flux. Core functionality
+is present, but filtration and batch fetch are still missing. Beyond that, there are still some rough spots that need 
+fixing. I added a TODO file to keep track of things I have noticed to make task selection easier for anyone wanting to
+contribute.
 
 #### When will Trough be stable?
 Let's get to usable first.
+
+## Installing/Running
+
+#### Dependency Installation
+You can use pip or your distribution's repositories.
+
+Here are instructions for some distributions:
+
+**Arch:** `sudo pacman -S python-gobject python-feedparser python-beautifulsoup4 python-requests`
+
+**Debian/Ubuntu:** `sudo apt-get install python3-gi python3-feedparser python3-bs4 python3-requests`
+
+**Fedora:** `sudo yum install pygobject3 python3-feedparser python3-beautifulsoup4 python3-requests`
+
+Trough itself has to be downloaded or pulled from GitHub.
+
+#### Running
+`cd` to the directory where you stored Trough's source files and run `python3 trough.py`. Note that the
+program stores a preferences file at ~/.config/trough/preferences.json.
+
+If the program fails to start then you are likely just missing a dependency. If it used to work but git pull broke it,
+I probably changed something with the preferences (sorry) and you need to delete your old preferences file.
+
+If you encounter a different problem feel free to open an issue and I'll do my best to help you out.

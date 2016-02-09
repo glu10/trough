@@ -26,8 +26,6 @@ import utilityFunctions
 from configManager import ConfigManager
 
 
-# NOT FINISHED
-
 class PreferencesCategory(metaclass=ABCMeta):
 
     def __init__(self, preferences, label):
@@ -71,7 +69,7 @@ class PreferencesCategory(metaclass=ABCMeta):
 
 class AppearancePreferences(PreferencesCategory):
     """
-    Views (Single/Double/Triple)
+    Views (Two-Pane/Three-Pane)
     Fonts (Category/Headline/Story)
     Colors (Font Color/Background Color/Selection Color/Selection Background Color)
     Reset to Defaults Button
@@ -138,10 +136,11 @@ class AppearancePreferences(PreferencesCategory):
         self.choices[pane] = button.get_font_name()
 
     def view_combo_box(self):
-        views = ['Single', 'Double', 'Triple']
+        views = ['Two-Pane', 'Three-Pane']
         cb = Gtk.ComboBoxText()
         for view in views:
             cb.append_text(view)
+
         cb.set_active(views.index(self.choices['View']))
         cb.connect('changed', self.view_switched)
         return cb
@@ -191,7 +190,7 @@ class FeedsPreferences(PreferencesCategory):
     def __init__(self, parent, preferences):
         super().__init__(preferences, 'Feeds')
         self.parent = parent
-        self.info_box = self.info_placeholder()
+        self.info_box, self.info_scroll = self.info_placeholder()
         self.feed_list = Gtk.ListStore(str, str)
         self.view = Gtk.TreeView(model=self.feed_list)
 
@@ -214,7 +213,7 @@ class FeedsPreferences(PreferencesCategory):
         grid.attach(remove_button, 0, 0, 1, 1)
         grid.attach(add_button, 1, 0, 1, 1)
 
-        # List of Feeds # TODO: really need to just have a shared model throughout the entire program for feeds/items, will do shortly
+        # List of Feeds
         for name in self.choices:
             self.feed_list.append([name, self.choices[name]])
 
@@ -225,7 +224,7 @@ class FeedsPreferences(PreferencesCategory):
         select.connect("changed", self.feed_selected)
         scroll = Gtk.ScrolledWindow()
         scroll.add(self.view)
-        scroll.set_size_request(50,100)
+        scroll.set_size_request(50, 100)
         frame = Gtk.Frame()
         frame.add(scroll)
 
@@ -238,29 +237,40 @@ class FeedsPreferences(PreferencesCategory):
 
     def info_placeholder(self):
         """
-        If there are no feeds, or no feed is selected, just have the empty frame
+        The GUI component that will be populated with feed information when a feed is selected.
         """
-        label = self.bold_label('Feed Information')
-        frame = Gtk.Frame(label_widget=label)
-        frame.set_label_align(.5, 0)  # Centers the frame label
-        return frame
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        # Feed information label
+        info_label = Gtk.Label()
+        info_label.set_markup('<b>' + 'Feed Information' + '</b>')
+        info_label.set_alignment(0.5, 0)  # Center it
+
+
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.ALWAYS, Gtk.PolicyType.ALWAYS)
+        sw.set_size_request(100, 100)
+        vbox.pack_start(info_label, False, False, 5)
+        vbox.pack_start(sw, True, True, 0)
+        return vbox, sw
 
     def create_feed_info(self, feed_name, iter):
         """
-        Display the information related to a feed, as well as a button to edit information.
+        Display the information related to a feed.
         """
+        # Information Grid
         grid = Gtk.Grid(row_spacing=3, orientation=Gtk.Orientation.VERTICAL, column_homogeneous=True)
 
         # Feed label
         label_desc = self.bold_label('Label', left=True)
         grid.add(label_desc)
-        grid.attach_next_to(self.descriptor_label(feed_name), label_desc, Gtk.PositionType.RIGHT, 5, 1)
+        grid.attach_next_to(self.descriptor_label(feed_name), label_desc, Gtk.PositionType.RIGHT, 4, 1)
 
         # Feed URI
         uri_desc = self.bold_label('URI', left=True)
         grid.add(uri_desc)
         uri = self.feed_list[iter][1]
-        grid.attach_next_to(self.descriptor_label(uri), uri_desc, Gtk.PositionType.RIGHT, 5, 1)
+        grid.attach_next_to(self.descriptor_label(uri), uri_desc, Gtk.PositionType.RIGHT, 4, 1)
+
         return grid
 
     def feed_selected(self, selection):
@@ -269,24 +279,24 @@ class FeedsPreferences(PreferencesCategory):
             feed_name = model[iter][0]
 
             # Remove old info
-            for child in self.info_box:
-                if type(child) == Gtk.Grid: # Type check is to avoid removing the frame label
-                    child.destroy()
+            for child in self.info_scroll:
+                child.destroy()
 
             # Display new information
-            self.info_box.add(self.create_feed_info(feed_name, iter))
-            self.info_box.show_all()
+            self.info_scroll.add(self.create_feed_info(feed_name, iter))
+            self.info_scroll.show_all()
 
     def remove_selection(self, button):
         selection = self.view.get_selection()
         model, iter = selection.get_selected()
         if iter:
             model.remove(iter)
+            # Commented out the attempt to move selection because of GTK-critical error.
             # Try to move the selection to the next or previous feed.
             #if not self.attempt_selection(selection, iter):
-            #    self.attempt_selection(selection, model.iter_parent(iter))
+            #  self.attempt_selection(selection, model.iter_parent(iter))
 
-    def add_feed(self, button):  # TODO: Redesign addFeed to allow for it to be reused here.
+    def add_feed(self, button):
         """
         Note: This only adds the feed to the temporary feed list in the preferences window.
         """
@@ -302,7 +312,6 @@ class FeedsPreferences(PreferencesCategory):
             self.view.get_selection().select_iter(iter)  # Selects the feed just added.
 
     def attempt_selection(self, selector, iter):
-        # TODO: This is emitting a GTK-Critical error when it goes wrong, think of another way to probe?
         if iter is not None:
             try:
                 if type(iter) == int:
@@ -318,6 +327,7 @@ class FeedsPreferences(PreferencesCategory):
         for p in self.feed_list:
             self.choices[p[0]] = p[1]
         return self.choices
+
 
 class FiltrationPreferences(PreferencesCategory):
     def __init__(self, preferences):

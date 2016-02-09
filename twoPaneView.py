@@ -24,7 +24,7 @@ from newsView import NewsView
 from textFormat import TextFormat
 import utilityFunctions
 
-class SplitNews(NewsView):
+class TwoPaneView(NewsView):
     """ GUI component where headlines and story contents are split apart """
     def __init__(self, config, gatherer):
         self.config = config
@@ -48,7 +48,7 @@ class SplitNews(NewsView):
         tree_view = Gtk.TreeView(model=headline_store)
         tree_view.get_selection().connect("changed", self.show_new_article)
 
-        columns = ('Label', 'Headline')
+        columns = ('Feed', 'Headline')
         for i in range(len(columns)):
             cell = Gtk.CellRendererText()
             if i == 0:  # Label
@@ -72,8 +72,6 @@ class SplitNews(NewsView):
         text_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
         text_view = Gtk.TextView(editable=False, cursor_visible=False)
         text_view.set_size_request(500, 200)
-        tb = text_view.get_buffer()
-        #tb.insert(tb.get_end_iter(), " "*300)  # Placeholder
         text_scroll.add(text_view)
         return text_scroll, text_view
 

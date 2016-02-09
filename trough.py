@@ -20,9 +20,8 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, Gdk, GLib
 from addFeed import AddFeed
 from configManager import ConfigManager
-from singleNews import SingleNews
-from splitNews import SplitNews
-from tripleNews import TripleNews
+from twoPaneView import TwoPaneView
+from threePaneView import ThreePaneView
 from gatherer import Gatherer
 from preferencesWindow import PreferencesWindow
 
@@ -44,6 +43,9 @@ class Trough(Gtk.Window):
         self.current_view.populate(self.gatherer.collected_items)
 
     def set_window_icon(self):
+        """
+        Attempts to find a generic RSS icon in the user's GTK theme, then associates it with the program if found.
+        """
         try:
             theme = Gtk.IconTheme.get_default()
             icon = theme.lookup_icon("rss", 32, Gtk.IconLookupFlags.GENERIC_FALLBACK)
@@ -54,16 +56,20 @@ class Trough(Gtk.Window):
             pass
 
     def switch_view(self):
+        """
+        Activates the view currently chosen in the preferences and returns it.
+        """
         view_key = self.config.appearance_preferences()['View']
-        views = {'Single': SingleNews, 'Double': SplitNews, 'Triple': TripleNews}
-        view = views[view_key]
+        views = {'Two-Pane': TwoPaneView, 'Three-Pane': ThreePaneView}
+        view_class = views[view_key]
 
-        if type(self.current_view) != view:
+        if type(self.current_view) != view_class:  # Will the new view actually be different from the current?
             if self.current_view:
-                self.current_view.destroy_display()
+                self.current_view.destroy_display()  # If we are replacing a different view, destroy the old one.
 
-            self.current_view = view(self.config, self.gatherer)
+            self.current_view = view_class(self.config, self.gatherer)  # Make the new view
             self.add(self.current_view.top_level())
+
             if self.gatherer.collected_items:
                 self.current_view.populate(self.gatherer.collected_items)
 
@@ -110,7 +116,7 @@ class Trough(Gtk.Window):
     def on_add_clicked(self, widget):
         dialog = AddFeed(self)
         response = dialog.get_response(self.config.feeds())
-        # TODO: When the feeds are changed to an actual model the overwrite case has to be handled here.
+
         if response:
             self.config.add_feed(response.name, response.uri)
             self.on_refresh_clicked(None)  # Do a convenience refresh

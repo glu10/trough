@@ -22,8 +22,6 @@ import os, errno, json
 from collections import OrderedDict
 from gi.repository import Gio
 
-# Currently undergoing the transition of actually implementing the preferences
-
 class ConfigManager:
     """ Deals with configuration data that survives between sessions
         Examples are added feeds, filters, preferences, etc. """
@@ -45,7 +43,7 @@ class ConfigManager:
     @staticmethod
     def default_appearance_preferences():
         p = OrderedDict()
-        p['View'] = 'Double'
+        p['View'] = 'Two-Pane'
 
         # TODO: Investigate if these font strings are reliably set among different DEs/WMs
         gs = Gio.Settings('org.gnome.desktop.interface')
@@ -106,7 +104,6 @@ class ConfigManager:
             self.preferences['Feeds'] = OrderedDict()
 
     # If the configuration directory doesn't exist, try to make it.
-    # TODO: Handle permission error? Not sure if necessary
     def ensure_directory_exists(self):
         try:
             os.makedirs(self.config_home)
