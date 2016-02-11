@@ -46,9 +46,7 @@ Let's get to usable first.
 ## Installing/Running
 
 #### Dependency Installation
-You can use pip or your distribution's repositories.
-
-Here are instructions for some distributions:
+You can use pip or your distribution's repositories. Here are instructions for some distributions:
 
 **Arch:** `sudo pacman -S python-gobject python-feedparser python-beautifulsoup4 python-requests`
 
