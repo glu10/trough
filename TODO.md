@@ -1,6 +1,5 @@
 ## High Priority
 
-* Separate UI feedback from network calls(!!) through signaling or threading
 * Fetch RSS feeds and other batch calls with grequests (new dependency) to avoid one-after-another HTTP requests
 * Filtration (filtration text color + hide completely/send-to-bottom)
 

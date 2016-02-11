@@ -117,14 +117,6 @@ class Gatherer():
 
         return re.sub(r'<.*?>', '', description)
 
-    @staticmethod
-    def get_and_set_article(item):
-        if not item.article:  # Don't bother if the article has already been set
-            article_html = requests.get(item.link).content
-            item.article = select_rule(item.link, article_html)
-        return item.article
-
-
 class GathererWorkerThread(Thread):
     def __init__(self, parent, request_queue, fulfilled_queue):
         super().__init__(target=self.serve_requests)

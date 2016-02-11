@@ -116,7 +116,6 @@ class AppearancePreferences(PreferencesCategory):
             self.color_buttons.append(cb)
 
         # Reset to Defaults Button
-
         reset_button = Gtk.Button(label="Reset to defaults")
         reset_button.connect("clicked", self.confirm_and_reset_defaults)
 
