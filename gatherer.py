@@ -109,10 +109,10 @@ class Gatherer():
         # Not sure if this is my problem or feedparser's but XML Character Entity References aren't all getting caught
         description = re.sub(r'\&\#8211\;', '-', description)
         description = re.sub(r'\&\#8212\;', '—', description)
-        description = re.sub(r'(\[)*\&\#8216\;(\])*', '‘', description)
-        description = re.sub(r'(\[)*\&\#8217\;(\])*', '’', description)
-        description = re.sub(r'(\[)*\&\#8220\;(\])*', '“', description)
-        description = re.sub(r'(\[)*\&\#8221\;(\])*', '”', description)
+        description = re.sub(r'\&\#8216\;', '‘', description)
+        description = re.sub(r'\&\#8217\;', '’', description)
+        description = re.sub(r'\&\#8220\;', '“', description)
+        description = re.sub(r'\&\#8221\;', '”', description)
         description = re.sub(r'(\[)*\&\#8230\;(\])*', '…', description)
 
         return re.sub(r'<.*?>', '', description)
