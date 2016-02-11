@@ -123,4 +123,12 @@ class ThreePaneView(NewsView):
             model, iter = selection.get_selected()
             if model and iter:
                 self.last_item_index = model[iter][1]
-                TextFormat.full_story(self.gatherer.item(self.last_item_index), self.story_view)
+                item = self.gatherer.item(self.last_item_index)
+                if item.article:
+                    TextFormat.full_story(item, self.story_view)
+                else:
+                    self.gatherer.request_queue.put_nowait(item)
+
+    def receive_story(self, item):
+        if item == self.gatherer.item(self.last_item_index):
+            TextFormat.full_story(self.gatherer.item(self.last_item_index), self.story_view)

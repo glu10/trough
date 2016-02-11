@@ -21,16 +21,37 @@
 import requests
 import re
 import utilityFunctions
-
 from scraping import select_rule
 from item import Item
 
-class Gatherer:
+# Threading imports
+from threading import Thread
+from queue import Queue, Empty
+from gi.repository import Gdk
+
+
+class Gatherer():
     """ Gatherer is a singleton responsible for handling network requests """
 
-    def __init__(self, config):
+    def __init__(self, parent, config):
+        self.parent = parent
         self.config = config
         self.collected_items = None
+        self.request_queue = Queue()
+        self.fulfilled_queue = Queue()
+
+        self.thread = GathererWorkerThread(self, self.request_queue, self.fulfilled_queue)
+        self.thread.start()
+
+    def emit(self, *args):
+        self.parent.emit(*args)
+
+    def grab_scrape_result(self):
+        try:
+            item = self.fulfilled_queue.get(block=False)
+            return item
+        except Empty:
+            return None
 
     def item(self, index):
         if self.collected_items and 0 <= index <= len(self.collected_items):
@@ -84,6 +105,16 @@ class Gatherer:
     def description_cleanup(description):
         description = re.sub(r'\s+', ' ', description)
         description = re.sub(r'\n\n(\n+)', '\n\n', description)
+
+        # Not sure if this is my problem or feedparser's but XML Character Entity References aren't all getting caught
+        description = re.sub(r'\&\#8211\;', '-', description)
+        description = re.sub(r'\&\#8212\;', '—', description)
+        description = re.sub(r'(\[)*\&\#8216\;(\])*', '‘', description)
+        description = re.sub(r'(\[)*\&\#8217\;(\])*', '’', description)
+        description = re.sub(r'(\[)*\&\#8220\;(\])*', '“', description)
+        description = re.sub(r'(\[)*\&\#8221\;(\])*', '”', description)
+        description = re.sub(r'(\[)*\&\#8230\;(\])*', '…', description)
+
         return re.sub(r'<.*?>', '', description)
 
     @staticmethod
@@ -92,3 +123,32 @@ class Gatherer:
             article_html = requests.get(item.link).content
             item.article = select_rule(item.link, article_html)
         return item.article
+
+
+class GathererWorkerThread(Thread):
+    def __init__(self, parent, request_queue, fulfilled_queue):
+        super().__init__(target=self.serve_requests)
+        self.parent = parent
+        self.daemon = True
+        self.request_queue = request_queue
+        self.fulfilled_queue = fulfilled_queue
+
+    def serve_requests(self):
+        while True:
+            item = self.request_queue.get(block=True)
+            if not item.article:
+                article_html = requests.get(item.link).content
+                item.article = select_rule(item.link, article_html)
+                self.fulfilled_queue.put(item)
+                Gdk.threads_enter()
+                self.parent.emit('new_story_event')
+                Gdk.threads_leave()
+
+
+
+
+
+
+
+
+

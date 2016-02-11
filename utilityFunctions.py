@@ -24,7 +24,7 @@ The functions are being declared here for consistency's sake.
 """
 
 import feedparser
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, Gio
 
 def feedparser_parse(uri):
     """
@@ -64,6 +64,24 @@ def decision_popup(window, first, second):
         return False
 
 """ END GENERIC DIALOGS """
+
+
+def make_button(theme_icon_string=None, signal=None, function=None, tooltip_text=None):
+    button = Gtk.Button()
+    if theme_icon_string:
+        icon = Gio.ThemedIcon(name=theme_icon_string)
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        button.add(image)
+
+    if signal and function:
+        button.connect(signal, function)
+
+    if tooltip_text:
+        button.set_tooltip_text(tooltip_text)
+
+    return button
+
+
 
 def string_to_RGBA(rgba_string):
             rgba = Gdk.RGBA()

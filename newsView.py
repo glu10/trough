@@ -71,6 +71,10 @@ class NewsView(metaclass=ABCMeta):
         Clear the current contents of the view and populate them again.
         """
 
+    def receive_story(self, item):
+        """
+        A worker thread delivered a story to the view, see if it is current then display it if so
+        """
     @abstractmethod
     def text_containing_widgets(self):
         """
@@ -83,7 +87,8 @@ class NewsView(metaclass=ABCMeta):
         Apply the appropriate appearance preferences to the current view
         """
         fws = self.text_containing_widgets()  # Font widgets
-        if not fws or len(fws) > 3:
+
+        if not fws:
             return
 
         keys = ['Category Font', 'Headline Font', 'Story Font']

@@ -26,6 +26,8 @@ class ConfigManager:
     """ Deals with configuration data that survives between sessions
         Examples are added feeds, filters, preferences, etc. """
 
+    # Note: Throughout this class OrderedDicts are used purely for increased readability of the preferences file
+
     def __init__(self):
         self.config_home = os.path.join(os.path.expanduser("~"), ".config", "trough")
         self.preferences_file = "preferences.json"
@@ -48,7 +50,6 @@ class ConfigManager:
         # TODO: Investigate if these font strings are reliably set among different DEs/WMs
         gs = Gio.Settings('org.gnome.desktop.interface')
         default_font = gs.get_string('font-name')
-        # monospace_font = gs.get_string('monospace-font-name')
         document_font = gs.get_string('document-font-name')
 
         p['Category Font'] = default_font

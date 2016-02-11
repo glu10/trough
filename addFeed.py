@@ -108,7 +108,8 @@ class AddFeed(Gtk.Dialog):
 
         return False
 
-    def check_existence(self, name, feed_container):
+    @staticmethod
+    def check_existence(name, feed_container):
         if type(feed_container) in (dict, OrderedDict):
             return name in feed_container
         elif type(feed_container) == Gtk.ListStore:

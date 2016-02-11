@@ -41,8 +41,8 @@ class TwoPaneView(NewsView):
 
         self.update_appearance(config.appearance_preferences())
 
-        self.top_pane.pack1(self.headline_scroll, resize=True, shrink=False)  # Left
-        self.top_pane.pack2(self.story_scroll, resize=True, shrink=False)  # Right
+        self.top_pane.pack1(self.headline_scroll, resize=False, shrink=False)  # Left
+        self.top_pane.pack2(self.story_scroll, resize=False, shrink=True)  # Right
 
     def create_headline_view(self, headline_store):
         tree_view = Gtk.TreeView(model=headline_store)
@@ -104,11 +104,19 @@ class TwoPaneView(NewsView):
     def text_containing_widgets(self):
         return self.headline_view, self.story_view
 
+    def receive_story(self, item):
+        if item == self.gatherer.item(self.last_item_index):
+            TextFormat.full_story(self.gatherer.item(self.last_item_index), self.story_view)
+
     def show_new_article(self, selection):
         if not self.refreshing and selection:
             model, iter = selection.get_selected()
             if model:
                 self.last_item_index = model[iter][2]
-                TextFormat.full_story(self.gatherer.item(self.last_item_index), self.story_view)
+                item = self.gatherer.item(self.last_item_index)
+                if item.article:
+                    TextFormat.full_story(item, self.story_view)
+                else:
+                    self.gatherer.request_queue.put_nowait(item)
 
 

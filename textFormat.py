@@ -19,7 +19,6 @@
 """
 
 from gi.repository import Gtk, Gdk, Pango
-from gatherer import Gatherer
 
 class TextFormat:
     """
@@ -62,10 +61,9 @@ class TextFormat:
     @staticmethod
     def scraped_story(item, text_buffer):
         text_buffer.insert(TextFormat.__pos(text_buffer), "\n\n")
-        if Gatherer.get_and_set_article(item):
-            paragraph = text_buffer.create_tag("paragraph", pixels_below_lines=5, pixels_above_lines=5)
-            for p in item.article:
-                text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), p + "\n", paragraph)
+        paragraph = text_buffer.create_tag("paragraph", pixels_below_lines=5, pixels_above_lines=5)
+        for p in item.article:
+            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), p + "\n", paragraph)
 
     @staticmethod
     def rss_description(description, text_buffer):

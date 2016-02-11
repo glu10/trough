@@ -198,17 +198,11 @@ class FeedsPreferences(PreferencesCategory):
         grid = Gtk.Grid(column_homogeneous=True, row_homogeneous=True)
 
         # TODO: Making a lot of buttons in nearly the same way, a general factory method would be nice
-        remove_button = Gtk.Button(tooltip_text="Remove selected feed")
-        remove_icon = Gio.ThemedIcon(name="remove")
-        remove_image = Gtk.Image.new_from_gicon(remove_icon, Gtk.IconSize.BUTTON)
-        remove_button.add(remove_image)
-        remove_button.connect("clicked", self.remove_selection)
+        remove_button = utilityFunctions.make_button(theme_icon_string="remove", tooltip_text="Remove selected feed",
+                                                     signal="clicked", function=self.remove_selection)
 
-        add_button = Gtk.Button(tooltip_text="Add a feed")
-        add_icon = Gio.ThemedIcon(name="add")
-        add_image = Gtk.Image.new_from_gicon(add_icon, Gtk.IconSize.BUTTON)
-        add_button.add(add_image)
-        add_button.connect("clicked", self.add_feed)
+        add_button = utilityFunctions.make_button(theme_icon_string="add", tooltip_text="Add a feed",
+                                                  signal="clicked", function=self.add_feed)
 
         grid.attach(remove_button, 0, 0, 1, 1)
         grid.attach(add_button, 1, 0, 1, 1)
