@@ -30,6 +30,8 @@ class TwoPaneView(NewsView):
         self.config = config
         self.gatherer = gatherer
         self.last_item_index = -1
+        self.last_item_feed_name = None
+
         self.refreshing = False  # Set to true while refreshing to ignore selection changes
 
         # GUI components
@@ -42,7 +44,7 @@ class TwoPaneView(NewsView):
         self.update_appearance(config.appearance_preferences())
 
         self.top_pane.pack1(self.headline_scroll, resize=False, shrink=False)  # Left
-        self.top_pane.pack2(self.story_scroll, resize=False, shrink=True)  # Right
+        self.top_pane.pack2(self.story_scroll, resize=True, shrink=True)  # Right
 
     def create_headline_view(self, headline_store):
         tree_view = Gtk.TreeView(model=headline_store)
@@ -85,10 +87,13 @@ class TwoPaneView(NewsView):
         else:
             self.story_view.grab_focus()
 
-    def refresh(self, items):
+    def refresh(self):
         self.refreshing = True  # Toggling boolean as a hack to cover up the selection changed signal during the clear
         self.item_store.clear()
-        self.populate(items)
+        self.gatherer.request_feeds()
+        TextFormat.empty(self.story_view)
+        self.last_item_index = -1
+        self.last_item_feed_name = None
         self.refreshing = False
 
     def get_then_open_link(self, gatherer):
@@ -96,27 +101,33 @@ class TwoPaneView(NewsView):
         if active:
             super().open_link(active.link)
 
-    def populate(self, items):
-        for x, item in enumerate(items):
-            title = utilityFunctions.shorten_title(item.title)
-            self.item_store.append(list([item.label, title, x]))
+    def populate(self, feed_list):
+        for feed in feed_list:
+            if feed.items:
+                self.receive_feed(feed)
+
+    def receive_feed(self, feed):
+        for pos, item in enumerate(feed.items):
+            self.item_store.append(list([feed.name, item.title, pos]))
 
     def text_containing_widgets(self):
         return self.headline_view, self.story_view
 
     def receive_story(self, item):
-        if item == self.gatherer.item(self.last_item_index):
-            TextFormat.full_story(self.gatherer.item(self.last_item_index), self.story_view)
+        current_item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
+        if item == current_item:
+            TextFormat.full_story(item, self.story_view)
 
     def show_new_article(self, selection):
         if not self.refreshing and selection:
             model, iter = selection.get_selected()
             if model:
                 self.last_item_index = model[iter][2]
-                item = self.gatherer.item(self.last_item_index)
+                self.last_item_feed_name = model[iter][0]
+                item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
                 if item.article:
                     TextFormat.full_story(item, self.story_view)
                 else:
-                    self.gatherer.request_queue.put_nowait(item)
+                    self.gatherer.request(item)
 
 

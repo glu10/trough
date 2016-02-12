@@ -59,16 +59,15 @@ class NewsView(metaclass=ABCMeta):
         Retrieves the currently active story's url, then calls open_link
         """
 
-    @abstractmethod
-    def populate(self, items):
+    def populate(self, feeds):
         """
-        Fill this view with the information derived/provided from the RSS feeds.
+        Prepare already retrieved information for display
         """
 
     @abstractmethod
-    def refresh(self, items):
+    def refresh(self):
         """
-        Clear the current contents of the view and populate them again.
+        Clear the current contents of the view and requests fresh items
         """
 
     def receive_story(self, item):

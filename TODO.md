@@ -2,6 +2,7 @@
 
 * Fetch RSS feeds and other batch calls with grequests (new dependency) to avoid one-after-another HTTP requests
 * Filtration (filtration text color + hide completely/send-to-bottom)
+* Write unit tests
 
 ## Medium Priority
 

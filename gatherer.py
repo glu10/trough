@@ -23,6 +23,8 @@ import re
 import utilityFunctions
 from scraping import select_rule
 from item import Item
+from feed import Feed
+from collections import defaultdict
 
 # Threading imports
 from threading import Thread
@@ -30,76 +32,57 @@ from queue import Queue, Empty
 from gi.repository import Gdk
 
 
-class Gatherer():
+class Gatherer:
     """ Gatherer is a singleton responsible for handling network requests """
 
     def __init__(self, parent, config):
         self.parent = parent
         self.config = config
-        self.collected_items = None
-        self.request_queue = Queue()
-        self.fulfilled_queue = Queue()
+        self.request_queue = Queue()  # Can contain Feed Requests and
+        self.fulfilled_feed_queue = Queue()
+        self.fulfilled_scrape_queue = Queue()
 
-        self.thread = GathererWorkerThread(self, self.request_queue, self.fulfilled_queue)
+        self.thread = GathererWorkerThread(self, self.request_queue,
+                                           self.fulfilled_feed_queue, self.fulfilled_scrape_queue)
         self.thread.start()
 
     def emit(self, *args):
         self.parent.emit(*args)
 
+    def request_feeds(self):  # TODO: Clear out queue before asking for more in case old requests are lingering
+        for feed in self.config.feed_list():
+            self.request(feed)
+
+    def request(self, request):
+        self.request_queue.put(request, block=False)
+
+    def grab_feed_result(self):
+        return self.poll(self.fulfilled_feed_queue)
+
     def grab_scrape_result(self):
+        return self.poll(self.fulfilled_scrape_queue)
+
+    @staticmethod
+    def poll(q):
+        """
+        Called poll instead of dequeue because of possible confusion with double-ended queue
+        :param q: A Queue
+        :return: Next member of the queue, or None if the queue is empty
+        """
         try:
-            item = self.fulfilled_queue.get(block=False)
-            return item
+            result = q.get(block=False)
+            return result
         except Empty:
             return None
 
-    def item(self, index):
-        if self.collected_items and 0 <= index <= len(self.collected_items):
-            return self.collected_items[index]
+    def item(self, feed_name, index):
+        feeds = self.config.feeds()
+        if feed_name and feed_name in feeds:
+            feed = feeds[feed_name]
+            if feed.items and 0 <= index < len(feed.items):
+                return feed.items[index]
         else:
             return None
-
-    def collect(self):
-        collection = list()
-
-        feeds = self.config.feeds()
-
-        if not feeds:  # If there are no feeds, don't gather anything because there isn't anything to gather.
-            pass
-
-        for label, uri in feeds.items():
-
-            content = utilityFunctions.feedparser_parse(uri)
-
-            if content:
-                for entry in content['entries']:
-                    keys = list(entry.keys())
-
-                    title = ""
-                    description = ""
-                    link = ""
-
-                    if 'description' in keys:
-                        description = entry['description']
-                    elif 'summary' in keys:
-                        description = entry['summary']
-
-                    if 'title' in keys:
-                        title = entry['title']
-
-                    if 'link' in keys:
-                        link = entry['link']
-
-                    if not title and not description and not link:
-                        print('WARNING: The following entry with label ' + label +
-                              ' has no title, description, or link. Skipped.' + str(entry))
-                        continue
-
-                    item = Item(label, title, self.description_cleanup(description), link)
-                    collection.append(item)
-
-        self.collected_items = collection
-        return self.collected_items
 
     @staticmethod
     def description_cleanup(description):
@@ -117,30 +100,63 @@ class Gatherer():
 
         return re.sub(r'<.*?>', '', description)
 
+
 class GathererWorkerThread(Thread):
-    def __init__(self, parent, request_queue, fulfilled_queue):
+    def __init__(self, parent, request_queue, fulfilled_feed_queue, fulfilled_scrape_queue):
         super().__init__(target=self.serve_requests)
         self.parent = parent
         self.daemon = True
         self.request_queue = request_queue
-        self.fulfilled_queue = fulfilled_queue
+        self.fulfilled_feed_queue = fulfilled_feed_queue
+        self.fulfilled_scrape_queue = fulfilled_scrape_queue
+
+    def notify_main_thread(self, signal):
+        Gdk.threads_enter()
+        self.parent.emit(signal)
+        Gdk.threads_leave()
 
     def serve_requests(self):
         while True:
-            item = self.request_queue.get(block=True)
-            if not item.article:
-                article_html = requests.get(item.link).content
-                item.article = select_rule(item.link, article_html)
-                self.fulfilled_queue.put(item)
-                Gdk.threads_enter()
-                self.parent.emit('new_story_event')
-                Gdk.threads_leave()
+            request = self.request_queue.get(block=True)
+            request_type = type(request)
 
+            if request_type == Feed:
+                feed = request
+                self.gather_feed(feed)
+                self.fulfilled_feed_queue.put(feed)
+                self.notify_main_thread('feed_gathered_event')
 
+            elif request_type == Item:
+                item = request
+                if not item.article:
+                    article_html = requests.get(item.link).content
+                    item.article = select_rule(item.link, article_html)
+                    self.fulfilled_scrape_queue.put(item)
+                    self.notify_main_thread('item_scraped_event')
 
+            else:
+                raise RuntimeError('Invalid request of type ' + str(request_type) + ' given to GathererWorkerThread' +
+                                   ' the item was ' + str(request))
 
+    def gather_feed(self, feed):
+        """ Given a feed, retrieves the items of the feed """
+        content = utilityFunctions.feedparser_parse(feed.uri)
+        items = list()
+        if content:
+            for entry in content['entries']:
+                d = defaultdict(str, entry)
 
+                description = d['description']
+                if not description:
+                    description = d['summary']
+                title = d['title']
+                link = d['link']
 
+                if not title and not description and not link:
+                    print('WARNING: An entry from the feed with label ' + feed.name +
+                          ' has no title, description, or link. Skipped.' + str(entry))
+                else:
+                    item = Item(feed.name, title, Gatherer.description_cleanup(description), link)
+                    items.append(item)
 
-
-
+        feed.items = items

@@ -28,28 +28,31 @@ from utilityFunctions import make_button
 
 class Trough(Gtk.Window):
 
-    __gsignals__ = {'new_story_event': (GObject.SIGNAL_RUN_FIRST, None, ())}  # for custom signal handling
+    # __gsignals__ is used to register the names of custom signals
+    __gsignals__ = {'item_scraped_event': (GObject.SIGNAL_RUN_FIRST, None, ()),
+                    'feed_gathered_event': (GObject.SIGNAL_RUN_FIRST, None, ())}
 
     def __init__(self):
         Gtk.Window.__init__(self, title="Trough")
 
         # Signals
-        self.connect("delete-event", Gtk.main_quit)
-        self.connect("key_press_event", self.on_key_press)
-        self.connect("new_story_event", self.story_retrieved)
+        self.connect('delete-event', Gtk.main_quit)
+        self.connect('key_press_event', self.on_key_press)
+        self.connect('item_scraped_event', self.on_item_scraped)
+        self.connect('feed_gathered_event', self.on_feed_gathered)
 
         self.set_default_size(1000, 800)  # TODO: Is there a more intelligent way to set this according to screen size?
         self.set_window_icon()
         self.config = ConfigManager()
         self.config.load_config()
         self.header_bar = self.create_header()
+
         self.gatherer = Gatherer(self, self.config)
         self.current_view = None
         self.switch_view()
         self.show_all()
 
-        self.gatherer.collect()
-        self.current_view.populate(self.gatherer.collected_items)
+        self.gatherer.request_feeds()
 
     def set_window_icon(self):
         """
@@ -77,11 +80,8 @@ class Trough(Gtk.Window):
                 self.current_view.destroy_display()
 
             self.current_view = view_class(self.config, self.gatherer)  # Make the new view
+            self.current_view.populate(self.config.feed_list())
             self.add(self.current_view.top_level())
-
-            if self.gatherer.collected_items:
-                self.current_view.populate(self.gatherer.collected_items)
-
             self.show_all()
 
         return self.current_view
@@ -126,7 +126,7 @@ class Trough(Gtk.Window):
         pw.destroy()
 
     def on_refresh_clicked(self, widget=None):
-        self.current_view.refresh(self.gatherer.collect())
+        self.current_view.refresh()
 
     @staticmethod
     def do_scroll(widget, scroll):
@@ -135,12 +135,21 @@ class Trough(Gtk.Window):
         except AttributeError:
             pass
 
-    # TODO: I actually want this to be in the view class but putting it here for now
-    def story_retrieved(self, unnecessary_arg=None):
+    # TODO: It would be better to have this be in the view class but putting it here for now
+    def on_item_scraped(self, unnecessary_arg=None):
         while True:
             item = self.gatherer.grab_scrape_result()
             if item and item.article:
                 self.current_view.receive_story(item)
+            else:
+                break
+
+    # TODO: It would be better to have this be in the view class but putting it here for now
+    def on_feed_gathered(self, unnecessary_arg=None):
+        while True:
+            feed = self.gatherer.grab_feed_result()
+            if feed and feed.items:
+                self.current_view.receive_feed(feed)
             else:
                 break
 

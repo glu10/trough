@@ -22,8 +22,6 @@ from gi.repository import Gtk
 from newsView import NewsView
 from twoPaneView import TwoPaneView
 from textFormat import TextFormat
-import utilityFunctions
-from collections import defaultdict
 
 class ThreePaneView(NewsView):
 
@@ -31,8 +29,6 @@ class ThreePaneView(NewsView):
         self.config = config
         self.gatherer = gatherer
         self.refreshing = False
-
-        self.label_dict = dict()
 
         self.label_store = Gtk.ListStore(str)
         self.label_view = self.create_view(self.label_store, 'Feed', 0, self.show_new_headlines)
@@ -56,6 +52,7 @@ class ThreePaneView(NewsView):
         self.label_view.grab_focus()
         self.focused_index = 0
         self.last_item_index = -1
+        self.last_item_feed_name = None
 
     @staticmethod
     def create_view(store, label, pos, change_func):
@@ -74,30 +71,25 @@ class ThreePaneView(NewsView):
             widgets[changed_pos].grab_focus()
             self.focused_index = changed_pos
 
-    def match_label(self, model, iter, data=None):
-        return model[iter][0] == data
-
-    def refresh(self, items):
-        self.refreshing = True
-
-        self.label_store.clear()
-        self.headline_store.clear()
-
-        self.populate(items)
-        self.refreshing = False
-
-    def populate(self, items):
-        self.label_dict = defaultdict(list)
-        for i, item in enumerate(items):
-            self.label_dict[item.label].append(i)
-
-        for label in self.label_dict.keys():
-            self.label_store.append([label])
-
     def get_then_open_link(self, gatherer):
-        active = gatherer.item(self.last_item_index)
+        active = gatherer.item(self.last_item_feed_name, self.last_item_index)
         if active:
             super().open_link(active.link)
+
+    def populate(self, feed_list):
+        for feed in feed_list:
+            if feed.items:
+                self.receive_feed(feed)
+
+    def refresh(self):
+        self.refreshing = True
+        self.label_store.clear()
+        self.headline_store.clear()
+        self.gatherer.request_feeds()
+        TextFormat.empty(self.story_view)
+        self.last_item_index = -1
+        self.last_item_feed_name = None
+        self.refreshing = False
 
     def text_containing_widgets(self):
         return self.label_view, self.headline_view, self.story_view
@@ -108,14 +100,15 @@ class ThreePaneView(NewsView):
     def show_new_headlines(self, selection):
         if not self.refreshing and selection:
             model, iter = selection.get_selected()
-
+            self.last_item_feed_name = model[iter][0]
             self.refreshing = True
             self.headline_view.do_unselect_all(self.headline_view)
             self.headline_store.clear()
 
-            for index in self.label_dict[model[iter][0]]:
-                title = utilityFunctions.shorten_title(self.gatherer.item(index).title)
-                self.headline_store.append([title, index])
+            feed = self.config.get_feed(self.last_item_feed_name)
+            if feed:
+                for pos, item in enumerate(feed.items):
+                    self.headline_store.append([item.title, pos])
             self.refreshing = False
 
     def show_new_article(self, selection):
@@ -123,12 +116,16 @@ class ThreePaneView(NewsView):
             model, iter = selection.get_selected()
             if model and iter:
                 self.last_item_index = model[iter][1]
-                item = self.gatherer.item(self.last_item_index)
+                item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
                 if item.article:
                     TextFormat.full_story(item, self.story_view)
                 else:
-                    self.gatherer.request_queue.put_nowait(item)
+                    self.gatherer.request(item)
 
-    def receive_story(self, item):
-        if item == self.gatherer.item(self.last_item_index):
-            TextFormat.full_story(self.gatherer.item(self.last_item_index), self.story_view)
+    def receive_feed(self, feed):
+        self.label_store.append([feed.name])
+
+    def receive_story(self, item):  # TODO: Duplicated code, change to be common in NewsView later
+        current_item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
+        if item == current_item:
+            TextFormat.full_story(item, self.story_view)

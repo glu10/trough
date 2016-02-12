@@ -26,6 +26,11 @@ class TextFormat:
     """
 
     @staticmethod
+    def empty(text_view):
+        if text_view:
+            return text_view.set_buffer(Gtk.TextBuffer())
+
+    @staticmethod
     def full_story(item, textview=None):
         if textview is None:
             text_view = Gtk.TextView()

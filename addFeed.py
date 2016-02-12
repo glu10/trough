@@ -97,6 +97,7 @@ class AddFeed(Gtk.Dialog):
                 warning = "The URI \"" + uri + "\" returned no valid RSS items."
             elif already_exists:
                 warning = "The feed name " + name + " already exists."
+            # TODO: Check if feed URI already exists
 
             if not warning or utilityFunctions.decision_popup(self, warning + " Add the feed anyway?", ""):
                 return AddFeedResponse(name, uri, already_exists)
@@ -109,7 +110,7 @@ class AddFeed(Gtk.Dialog):
         return False
 
     @staticmethod
-    def check_existence(name, feed_container):
+    def check_existence(name, feed_container):  # TODO: This method is terrible and should be removed/refactored
         if type(feed_container) in (dict, OrderedDict):
             return name in feed_container
         elif type(feed_container) == Gtk.ListStore:

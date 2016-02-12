@@ -21,12 +21,12 @@
 import os, errno, json
 from collections import OrderedDict
 from gi.repository import Gio
+from feed import Feed
+from copy import deepcopy
 
 class ConfigManager:
     """ Deals with configuration data that survives between sessions
         Examples are added feeds, filters, preferences, etc. """
-
-    # Note: Throughout this class OrderedDicts are used purely for increased readability of the preferences file
 
     def __init__(self):
         self.config_home = os.path.join(os.path.expanduser("~"), ".config", "trough")
@@ -35,7 +35,7 @@ class ConfigManager:
 
     @staticmethod
     def default_preferences():
-        preferences = OrderedDict()
+        preferences = OrderedDict() # Ordered dict for readability
         preferences['Appearance'] = ConfigManager.default_appearance_preferences()
         preferences['Feeds'] = ConfigManager.default_feeds_preferences()
         preferences['Filtration'] = ConfigManager.default_filtration_preferences()
@@ -44,7 +44,7 @@ class ConfigManager:
 
     @staticmethod
     def default_appearance_preferences():
-        p = OrderedDict()
+        p = dict()
         p['View'] = 'Two-Pane'
 
         # TODO: Investigate if these font strings are reliably set among different DEs/WMs
@@ -64,11 +64,11 @@ class ConfigManager:
 
     @staticmethod
     def default_feeds_preferences():
-        return OrderedDict()
+        return dict()
 
     @staticmethod
     def default_filtration_preferences():  # TODO: Support for user-supplied regex expressions
-        p = OrderedDict()
+        p = dict()
         p['Filtered Links'] = list()
         p['Filtered Titles'] = list()
         p['Filtered Content'] = list()
@@ -78,7 +78,7 @@ class ConfigManager:
 
     @staticmethod
     def default_retrieval_preferences():  # TODO: Support for auto-refresh on a feed-by-feed basis would be nice
-        p = OrderedDict()
+        p = dict()
         p['Refresh When Opened'] = True
         p['Auto-refresh'] = False
         p['Auto-refresh Interval Time'] = 30   # Non-negative value, cap at a max value
@@ -101,11 +101,18 @@ class ConfigManager:
     def load_config(self):
         self.ensure_directory_exists()
         self.preferences = self.load_file(self.preferences_file, self.preferences)
-        if not self.preferences['Feeds']:
-            self.preferences['Feeds'] = OrderedDict()
 
-    # If the configuration directory doesn't exist, try to make it.
+        if not self.preferences['Feeds']:  # If there were no feeds listed in the preferences file
+            self.preferences['Feeds'] = dict()  # Replace None with an empty dictionary
+        else:
+            # Since we used JSON and not pickling, need to transform the serialized feed information into Feed objects
+            feed_object_dict = dict()
+            for feed_name, feed_attributes in self.preferences['Feeds'].items():
+                feed_object_dict[feed_name] = Feed.from_dict(feed_attributes)
+            self.preferences['Feeds'] = feed_object_dict
+
     def ensure_directory_exists(self):
+        """ Checks to see if the preference file's directory exists, and if it doesn't creates it. """
         try:
             os.makedirs(self.config_home)
         except OSError as exception:
@@ -115,8 +122,17 @@ class ConfigManager:
     def feeds(self):
         return self.preferences['Feeds']
 
+    def feed_list(self):
+        return self.feeds().values()
+
+    def get_feed(self, name):
+        if name in self.feeds():
+            return self.feeds()[name]
+        else:
+            return None
+
     def add_feed(self, name, uri):
-        self.preferences['Feeds'][name] = uri
+        self.preferences['Feeds'][name] = Feed(name, uri)
         self.update_preferences(self.preferences)
 
     def update_file(self, filename, data):
@@ -126,8 +142,15 @@ class ConfigManager:
 
     def update_preferences(self, preferences):
         """ Convenience function """
-        self.update_file(self.preferences_file, preferences)
+        self.update_file(self.preferences_file, self.serialize_preferences(preferences))
         self.preferences = preferences
+
+    @staticmethod
+    def serialize_preferences(preferences): # TODO: Optimize this, deep copying is wasteful
+        temp = deepcopy(preferences)
+        for feed in preferences['Feeds'].values():
+            temp['Feeds'][feed.name] = feed.to_dict()
+        return temp
 
     # Check if the specified file exists, and if it doesn't make a file with the default configuration
     def load_file(self, filename, defaults):

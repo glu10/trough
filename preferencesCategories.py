@@ -24,6 +24,7 @@ from collections import OrderedDict
 from addFeed import AddFeed
 import utilityFunctions
 from configManager import ConfigManager
+from feed import Feed
 
 
 class PreferencesCategory(metaclass=ABCMeta):
@@ -207,8 +208,8 @@ class FeedsPreferences(PreferencesCategory):
         grid.attach(add_button, 1, 0, 1, 1)
 
         # List of Feeds
-        for name in self.choices:
-            self.feed_list.append([name, self.choices[name]])
+        for feed in self.choices.values():
+            self.feed_list.append([feed.name, feed.uri])
 
         column = Gtk.TreeViewColumn("Feeds", Gtk.CellRendererText(), text=0)
         column.set_alignment(.5)
@@ -296,7 +297,7 @@ class FeedsPreferences(PreferencesCategory):
         dialog = AddFeed(self.parent)
         response = dialog.get_response(self.feed_list)
         if response:
-            if response.overwrite:
+            if response.overwrite:  # Are we replacing a different feed with this one because conflicting name/URI?
                 for i, feed in enumerate(self.feed_list):
                     if response.name == feed[0]:
                         self.feed_list.remove(self.feed_list.get_iter(i))
@@ -316,10 +317,18 @@ class FeedsPreferences(PreferencesCategory):
             return True
 
     def gather_choices(self):
-        self.choices = OrderedDict()
-        for p in self.feed_list:
-            self.choices[p[0]] = p[1]
-        return self.choices
+        temp = dict()
+
+        # Create a new feed object dict from the possibly changed information
+        for feed in self.feed_list:  # For each feed in our temporary ListStore
+            feed_name = feed[0]
+            feed_uri = feed[1]
+            temp[feed_name] = Feed(feed_name, feed_uri)
+
+            if feed_name in self.choices:
+                if self.choices[feed_name].uri == feed_uri:
+                    temp[feed_name].items = self.choices[feed_name].items
+        return temp
 
 
 class FiltrationPreferences(PreferencesCategory):

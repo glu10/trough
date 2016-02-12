@@ -19,13 +19,10 @@
 """
 
 class Feed:
-    """ An RSS Feed """
+    """ An RSS Feed, contains RSS Items """
 
-    # TODO: not used yet
-    # Making this class because I can't get away with treating feeds as just a dict of labels/URIs when new
-    # functionality like categories and refresh limits start to be implemented.
-    def __init__(self, label, uri, category=None, refresh_limit=None):
-        self.label = label  # Externally enforced as unique
+    def __init__(self, name, uri, category=None, refresh_limit=None):
+        self.name = name  # Externally enforced as unique
         self.uri = uri
         self.items = list()
 
@@ -35,17 +32,17 @@ class Feed:
 
     @staticmethod
     def from_dict(attribute_dict):
-        attributes = ['label', 'uri']
+        attributes = ['name', 'uri']
         for attribute in attributes:
             if attribute not in attribute_dict:
                 raise RuntimeError('A Feed Object could not be deserialized correctly, ' + attribute +
-                                   ' was present in the dictionary ' + attribute_dict)
+                                   ' was not present in the dictionary ' + str(attribute_dict))
 
-        return Feed(attribute_dict['label'], attribute_dict['uri'])
+        return Feed(attribute_dict['name'], attribute_dict['uri'])
 
     def to_dict(self):
         # Can't just use __dict__ because the items list is going to be excluded
-        return {'label': self.label, 'uri': self.uri}
+        return {'name': self.name, 'uri': self.uri}
 
-    def __eq__(self, other):
-        return self.label == other.label
+    def __eq__(self, other): # TODO: URI check?
+        return self.name == other.label
