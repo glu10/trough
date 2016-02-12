@@ -1,5 +1,6 @@
 ## High Priority
 
+* Change Trough from Gtk.Window to Gtk.Application + write cache on_quit()
 * Batch story fetch support
 * Filtration (filtration text color + hide completely/send-to-bottom)
 * Write unit tests
