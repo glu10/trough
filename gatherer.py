@@ -25,6 +25,7 @@ from scraping import select_rule
 from item import Item
 from feed import Feed
 from collections import defaultdict
+from cache import Cache
 
 # Threading imports
 from threading import Thread
@@ -38,18 +39,26 @@ class Gatherer:
     def __init__(self, parent, config):
         self.parent = parent
         self.config = config
-        self.request_queue = Queue()  # Can contain Feed Requests and
+        self.cache = Cache()
+        self.request_queue = Queue()  # Can contain Feed Requests and Item (scraping) requests
         self.fulfilled_feed_queue = Queue()
         self.fulfilled_scrape_queue = Queue()
 
-        self.thread = GathererWorkerThread(self, self.request_queue,
-                                           self.fulfilled_feed_queue, self.fulfilled_scrape_queue)
-        self.thread.start()
+        self.threads = self.create_and_start_threads(2)
+
+    def create_and_start_threads(self, num_threads):
+        threads = list()
+        for i in range(num_threads):
+            thread = GathererWorkerThread(self, self.cache,
+                                          self.request_queue, self.fulfilled_feed_queue, self.fulfilled_scrape_queue)
+            threads.append(thread)
+            thread.start()
+        return threads
 
     def emit(self, *args):
         self.parent.emit(*args)
 
-    def request_feeds(self):  # TODO: Clear out queue before asking for more in case old requests are lingering
+    def request_feeds(self):
         for feed in self.config.feed_list():
             self.request(feed)
 
@@ -96,19 +105,21 @@ class Gatherer:
         description = re.sub(r'\&\#8217\;', '’', description)
         description = re.sub(r'\&\#8220\;', '“', description)
         description = re.sub(r'\&\#8221\;', '”', description)
-        description = re.sub(r'(\[)*\&\#8230\;(\])*', '…', description)
+        description = re.sub(r'\&\#8230\;', '…', description)
 
         return re.sub(r'<.*?>', '', description)
 
 
 class GathererWorkerThread(Thread):
-    def __init__(self, parent, request_queue, fulfilled_feed_queue, fulfilled_scrape_queue):
+    def __init__(self, parent, cache, request_queue, fulfilled_feed_queue, fulfilled_scrape_queue):
         super().__init__(target=self.serve_requests)
         self.parent = parent
-        self.daemon = True
+        self.cache = cache
         self.request_queue = request_queue
         self.fulfilled_feed_queue = fulfilled_feed_queue
         self.fulfilled_scrape_queue = fulfilled_scrape_queue
+        self.session = requests.Session()
+        self.daemon = True
 
     def notify_main_thread(self, signal):
         Gdk.threads_enter()
@@ -128,15 +139,24 @@ class GathererWorkerThread(Thread):
 
             elif request_type == Item:
                 item = request
-                if not item.article:
-                    article_html = requests.get(item.link).content
-                    item.article = select_rule(item.link, article_html)
-                    self.fulfilled_scrape_queue.put(item)
-                    self.notify_main_thread('item_scraped_event')
+                self.gather_item(item)
+                self.fulfilled_scrape_queue.put(item)
+                self.notify_main_thread('item_scraped_event')
 
             else:
                 raise RuntimeError('Invalid request of type ' + str(request_type) + ' given to GathererWorkerThread' +
                                    ' the item was ' + str(request))
+
+    def gather_item(self, item):
+        if not item.article:
+            hit = self.cache.query(item.link)
+            if hit:
+                item.article = hit
+            else:
+                article_html = self.session.get(item.link).content
+                item.article = select_rule(item.link, article_html)
+                self.cache.put(item.link, item.article)
+        return item
 
     def gather_feed(self, feed):
         """ Given a feed, retrieves the items of the feed """

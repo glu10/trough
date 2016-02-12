@@ -24,22 +24,23 @@ from gi.repository import Gio
 from feed import Feed
 from copy import deepcopy
 
-class ConfigManager:
+
+class Preferences:
     """ Deals with configuration data that survives between sessions
-        Examples are added feeds, filters, preferences, etc. """
+        Examples are appearance settings, added feeds, filters, etc. """
 
     def __init__(self):
-        self.config_home = os.path.join(os.path.expanduser("~"), ".config", "trough")
-        self.preferences_file = "preferences.json"
+        self.preferences_directory = os.path.join(os.path.expanduser('~'), '.config', 'trough')
+        self.preferences_file = 'preferences.json'
         self.preferences = self.default_preferences()
 
     @staticmethod
     def default_preferences():
-        preferences = OrderedDict() # Ordered dict for readability
-        preferences['Appearance'] = ConfigManager.default_appearance_preferences()
-        preferences['Feeds'] = ConfigManager.default_feeds_preferences()
-        preferences['Filtration'] = ConfigManager.default_filtration_preferences()
-        preferences['Retrieval'] = ConfigManager.default_retrieval_preferences()
+        preferences = OrderedDict()  # Ordered dict for readability
+        preferences['Appearance'] = Preferences.default_appearance_preferences()
+        preferences['Feeds'] = Preferences.default_feeds_preferences()
+        preferences['Filtration'] = Preferences.default_filtration_preferences()
+        preferences['Retrieval'] = Preferences.default_retrieval_preferences()
         return preferences
 
     @staticmethod
@@ -67,7 +68,7 @@ class ConfigManager:
         return dict()
 
     @staticmethod
-    def default_filtration_preferences():  # TODO: Support for user-supplied regex expressions
+    def default_filtration_preferences():
         p = dict()
         p['Filtered Links'] = list()
         p['Filtered Titles'] = list()
@@ -99,8 +100,8 @@ class ConfigManager:
         return self.preferences['Retrieval']
 
     def load_config(self):
-        self.ensure_directory_exists()
-        self.preferences = self.load_file(self.preferences_file, self.preferences)
+        self.ensure_directory_exists(self.preferences_directory)
+        self.preferences = self.load_file(self.preferences_directory, self.preferences_file, self.preferences)
 
         if not self.preferences['Feeds']:  # If there were no feeds listed in the preferences file
             self.preferences['Feeds'] = dict()  # Replace None with an empty dictionary
@@ -111,10 +112,11 @@ class ConfigManager:
                 feed_object_dict[feed_name] = Feed.from_dict(feed_attributes)
             self.preferences['Feeds'] = feed_object_dict
 
-    def ensure_directory_exists(self):
-        """ Checks to see if the preference file's directory exists, and if it doesn't creates it. """
+    @staticmethod
+    def ensure_directory_exists(directory):
+        """ Checks to see if the given directory exists, and if it doesn't creates it. """
         try:
-            os.makedirs(self.config_home)
+            os.makedirs(directory)
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
@@ -135,14 +137,15 @@ class ConfigManager:
         self.preferences['Feeds'][name] = Feed(name, uri)
         self.update_preferences(self.preferences)
 
-    def update_file(self, filename, data):
-        file_path = os.path.join(self.config_home, filename)
+    @staticmethod
+    def update_file(containing_directory, filename, data):
+        file_path = os.path.join(containing_directory, filename)
         with open(file_path, 'w') as data_file:
             json.dump(data, data_file)
 
     def update_preferences(self, preferences):
         """ Convenience function """
-        self.update_file(self.preferences_file, self.serialize_preferences(preferences))
+        self.update_file(self.preferences_directory, self.preferences_file, self.serialize_preferences(preferences))
         self.preferences = preferences
 
     @staticmethod
@@ -152,24 +155,27 @@ class ConfigManager:
             temp['Feeds'][feed.name] = feed.to_dict()
         return temp
 
-    # Check if the specified file exists, and if it doesn't make a file with the default configuration
-    def load_file(self, filename, defaults):
-        file_path = os.path.join(self.config_home, filename)
+    @staticmethod
+    def load_file(containing_directory, filename, defaults):
+        """ Check if the specified file exists, and if it doesn't make a file with the default configuration """
+        file_path = os.path.join(containing_directory, filename)
         data = OrderedDict()
 
-        # If we expect some information, and the file doesn't exist or is empty
-        if defaults and (not os.path.isfile(file_path) or os.stat(file_path).st_size == 0):
-            if defaults:
-                self.update_file(filename, defaults)  # Write defaults to replace the empty/nonexistent file
+        # If the file doesn't exist or is empty
+        if not os.path.isfile(file_path) or os.stat(file_path).st_size == 0:
+            if defaults:  # If there are defaults, write them to replace the empty/nonexistent file
+                Preferences.update_file(containing_directory, filename, defaults)
                 data = defaults
-        else:
+            else:
+                return defaults  # Just fake as if we loaded the defaults
+        else:  # If there is a file
             with open(file_path, 'r') as data_file:
                 try:
                     data = json.load(data_file)
                 except json.decoder.JSONDecodeError:
-                    raise RuntimeError("Error parsing the JSON in " + file_path + ", is it valid JSON?")
+                    raise RuntimeError('Error parsing the JSON in ' + file_path + ', is it valid JSON?')
                 # Make sure that the information we are getting actually corresponds to real preferences.
-                if defaults and sorted(data.keys()) != sorted(defaults.keys()):
-                    raise RuntimeError("Data in " + file_path + " did not match expectations," +
-                                                                " fix the problem or delete the file.")
+                if type(defaults) in (dict, OrderedDict) and sorted(data.keys()) != sorted(defaults.keys()):
+                    raise RuntimeError('Data in ' + file_path + ' did not match expectations,' +
+                                                                ' fix the problem or delete the file.')
         return data

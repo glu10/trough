@@ -74,6 +74,7 @@ class NewsView(metaclass=ABCMeta):
         """
         A worker thread delivered a story to the view, see if it is current then display it if so
         """
+
     @abstractmethod
     def text_containing_widgets(self):
         """

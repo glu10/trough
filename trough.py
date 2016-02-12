@@ -19,7 +19,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, Gdk, GLib, GObject
 from addFeed import AddFeed
-from configManager import ConfigManager
+from preferences import Preferences
 from twoPaneView import TwoPaneView
 from threePaneView import ThreePaneView
 from gatherer import Gatherer
@@ -43,7 +43,7 @@ class Trough(Gtk.Window):
 
         self.set_default_size(1000, 800)  # TODO: Is there a more intelligent way to set this according to screen size?
         self.set_window_icon()
-        self.config = ConfigManager()
+        self.config = Preferences()
         self.config.load_config()
         self.header_bar = self.create_header()
 

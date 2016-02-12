@@ -23,7 +23,7 @@ from gi.repository import Gtk, Gdk, Gio
 from collections import OrderedDict
 from addFeed import AddFeed
 import utilityFunctions
-from configManager import ConfigManager
+from preferences import Preferences
 from feed import Feed
 
 
@@ -162,7 +162,7 @@ class AppearancePreferences(PreferencesCategory):
     def confirm_and_reset_defaults(self, widget):
         if utilityFunctions.decision_popup(self.parent, 'Reset Appearance to Defaults',
                           'Are you sure you want to reset your Appearance preferences to default values?'):
-            self.choices = ConfigManager.default_appearance_preferences()
+            self.choices = Preferences.default_appearance_preferences()
 
             # Visual Effects
             # Set the view combo box to "Double" which is the second entry
