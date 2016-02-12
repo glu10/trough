@@ -71,7 +71,7 @@ class Cache:
         """ Write the cache to the cache file """
         temp = dict()
         for key, value in self.cache.items():
-            if value.used():
+            if value.should_keep():
                 temp[key] = value.item  # Unpack the item
 
         Preferences.update_file(self.cache_directory, self.cache_file, temp)
