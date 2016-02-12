@@ -44,5 +44,5 @@ class Feed:
         # Can't just use __dict__ because the items list is going to be excluded
         return {'name': self.name, 'uri': self.uri}
 
-    def __eq__(self, other): # TODO: URI check?
-        return self.name == other.label
+    def __eq__(self, other):  # TODO: URI check?
+        return self.name == other.name

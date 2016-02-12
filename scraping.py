@@ -33,11 +33,12 @@ A heuristic is used for sites that do not have an explicit rule.
 It is planned to provide functionality that allows a user to add to or modify these base rules.
 """
 
+
 def select_rule(link, html):
     soup = BeautifulSoup(html, 'html.parser')
 
     for identifier, scrape_rule in rules.items():  # see bottom of file for rules dictionary
-        if identifier in link:
+        if identifier in link:  # TODO: not a problem now but identifiers could clash, need better resolution
             try:
                 return cleanup(scrape_rule(soup))
             except AttributeError:  # A rule couldn't find what it assumed would be there
@@ -45,12 +46,14 @@ def select_rule(link, html):
 
     return unknown_source(soup)
 
+
 def unknown_source(soup):
         """ Making a best guess as to where the article is contained """
         paragraphs = cleanup(soup.find_all('p'))
 
         # Only keep paragraphs past a certain threshold length
         return [p for p in paragraphs if len(p) >= 20]  # TODO: Configuration for this threshold
+
 
 def cleanup(paragraphs):
 
@@ -69,38 +72,54 @@ def cleanup(paragraphs):
 
     return cleaned
 
+
 def abc_news(soup):
     return soup.findAll('p', {'itemprop': 'articleBody'})
+
 
 def bloomberg(soup):
     return soup.find('div', {'class': 'article-body__content'}).findAll('p')
 
+
 def cnn(soup):
     return soup.findAll('p', 'zn-body__paragraph')
+
 
 def fox_news(soup):
     return soup.find('article').findAll('p')
 
+
 def huffington_post(soup):
     return soup.find('div', {'class': 'entry-component__content'}).findAll('p')
+
 
 def nbc_news(soup):
     return soup.find('div', {'class': 'article-body'}).findAll('p')
 
+
 def new_york_times(soup):
     return soup.find('article', {'id': 'story'}).findAll('p')
+
 
 def npr(soup):
     return soup.find('div', {'id': 'storytext'}).find_all('p')
 
+
 def reuters(soup):
     return soup.find('span', {'id': 'articleText'}).findAll('p')
+
+
+def time(soup):
+    return soup.find('div', {'class': 'readingpane'}).findAll('p')
+
 
 def usa_today(soup):
     return soup.find('div', {'itemprop': 'articleBody'}).findAll('p')
 
+
 def washington_post(soup):
     return soup.find('article', {'itemprop': 'articleBody'}).findAll('p')
+
 
 rules = {'abcnews.go.com': abc_news,
          'bloomberg.com': bloomberg,
@@ -111,6 +130,7 @@ rules = {'abcnews.go.com': abc_news,
          'nytimes.com': new_york_times,
          'npr.org': npr,
          'reuters.com': reuters,
+         'time.com': time,
          'usatoday.com': usa_today,
-         'washingtonpost.com': washington_post
+         'washingtonpost.com': washington_post,
          }

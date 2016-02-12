@@ -254,16 +254,20 @@ class FeedsPreferences(PreferencesCategory):
         # Information Grid
         grid = Gtk.Grid(row_spacing=3, orientation=Gtk.Orientation.VERTICAL, column_homogeneous=True)
 
-        # Feed label
-        label_desc = self.bold_label('Label', left=True)
-        grid.add(label_desc)
-        grid.attach_next_to(self.descriptor_label(feed_name), label_desc, Gtk.PositionType.RIGHT, 4, 1)
+        # Feed name
+        name_desc = self.bold_label('Name', left=True)
+        grid.add(name_desc)
+        name_display = self.descriptor_label(feed_name)
+        name_display.set_selectable(True)
+        grid.attach_next_to(name_display, name_desc, Gtk.PositionType.RIGHT, 4, 1)
 
         # Feed URI
         uri_desc = self.bold_label('URI', left=True)
         grid.add(uri_desc)
         uri = self.feed_list[iter][1]
-        grid.attach_next_to(self.descriptor_label(uri), uri_desc, Gtk.PositionType.RIGHT, 4, 1)
+        uri_display = self.descriptor_label(uri)
+        uri_display.set_selectable(True)
+        grid.attach_next_to(uri_display, uri_desc, Gtk.PositionType.RIGHT, 4, 1)
 
         return grid
 
