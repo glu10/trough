@@ -106,8 +106,9 @@ class Gatherer:
         description = re.sub(r'\&\#8220\;', '“', description)
         description = re.sub(r'\&\#8221\;', '”', description)
         description = re.sub(r'\&\#8230\;', '…', description)
+        description = re.sub(r'<.*?>', '', description)
 
-        return re.sub(r'<.*?>', '', description)
+        return description
 
 
 class GathererWorkerThread(Thread):

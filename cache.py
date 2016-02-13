@@ -43,7 +43,7 @@ class Cache:
         for key, value in previous.items():
             self.put(key, value, False)
 
-        self.lock = RLock()  # Need an RLock as opposed to a Lock because one thread may need to call multiple functions
+        self.lock = RLock()  # Need an RLock as opposed to a Lock because of nested function calls
 
     @synchronize_cache
     def clear(self):

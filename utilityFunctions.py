@@ -66,10 +66,15 @@ def decision_popup(window, first, second):
 """ END GENERIC DIALOGS """
 
 
-def make_button(theme_icon_string=None, signal=None, function=None, tooltip_text=None):
+def make_button(theme_icon_string=None, backup_icon_string=None, signal=None, function=None, tooltip_text=None):
     button = Gtk.Button()
+
     if theme_icon_string:
-        icon = Gio.ThemedIcon(name=theme_icon_string)
+        if backup_icon_string and not Gtk.IconTheme.get_default().has_icon(backup_icon_string):
+            icon = Gio.ThemedIcon(name=backup_icon_string)
+        else:
+            icon = Gio.ThemedIcon(name=theme_icon_string)
+
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         button.add(image)
 

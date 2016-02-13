@@ -100,8 +100,9 @@ class Trough(Gtk.Window):
         return add_button
 
     def create_preferences_button(self):
-        preferences_button = make_button(theme_icon_string="preferences", tooltip_text="Preferences",
-                                         signal="clicked", function=self.on_preferences_clicked)
+        preferences_button = make_button(theme_icon_string='preferences', backup_icon_string='preferences-system',
+                                         tooltip_text="Preferences", signal="clicked",
+                                         function=self.on_preferences_clicked)
         return preferences_button
 
     def create_refresh_button(self):

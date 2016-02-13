@@ -12,6 +12,7 @@
 * Persistent view widgets sizing
 * Bottom status bar to communicate progress of network requests
 * Icon fallbacks + get icon deprecated function fix
+* Fake feeds
 
 ## Low Priority
 

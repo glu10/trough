@@ -15,30 +15,36 @@ A GTK+ RSS news reader (currently in the early stages of development)
 * News story scraping, allowing users to provide custom scraping rules to complement or override default rules.
 * Timed filtration (based on content/title). "I'm so tired of X, I don't want to see it again until Y."
 * Multiple fetching/caching strategies (Prefetch all stories? Fetch on headline click?)
+* "Fake feeds", set up a scrape rule for titled links and pretend it was an RSS feed.
 
 ## Avoiding
 * Bookmark management (browsers can do that).
 * Being cross-platform (simplifies testing).
-
+* Podcast/Torrent/any other non-text integration (feature creep).
 
 ## FAQ
 
 #### Why build another RSS reader?
 
-Current RSS readers only display the content given directly in an RSS feed, which is entirely sensible.
-Trough aims to take on the unmaintainable task of displaying both RSS content and linked content.
-Displaying linked content can be done through scraping, but scraping rules break and can't possibly be comprehensive.
-What's an RSS reader to do? Assume an advanced user and cede control.
+**Short answer:** Because I couldn't find an RSS reader that fit the niche I was looking for.
+
+**Long answer:** Current RSS readers that display linked content often do so through embedded browsers. While 
+convenient, this approach brings with it all of the heaviness of a browser, as well as all of the visual noise of web 
+pages. Trough takes a different approach by being based entirely around textual scraping. This is lightweight and 
+allows users to decide exactly what they want to see. Scraping has its own downsides, since scraping rules break when 
+web designs inevitably change, and no collection of scraping rules could possibly be comprehensive. Due to this, Trough 
+is primarily aimed towards advanced users who are willing to tweak and create scraping rules in order to maintain their 
+own textual news reading nirvana.
 
 #### Isn't just using a browser easier?
 For one or two stories absolutely, but habitually checking sites becomes tiresome.
 
 #### When will Trough be usable?
 "Certainly eventually." I'm going to see this project to fruition because this is a program I have been wishing for
-personally and use, but I don't want to set hard dates anymore because my schedule has been in flux. Core functionality
-is present, but filtration and batch fetch are still missing. Beyond that, there are still some rough spots that need 
-fixing. I added a TODO file to keep track of things I have noticed to make task selection easier for anyone wanting to
-contribute.
+personally, but I don't want to set hard dates anymore because my schedule has been in flux. Core functionality
+is present, but filtration, batch fetch, and fake feeds are still missing. Beyond that, there are still some rough 
+spots that need fixing. I added a TODO file to keep track of things I have noticed to make task selection easier for 
+anyone wanting to contribute.
 
 #### When will Trough be stable?
 Let's get to usable first.
