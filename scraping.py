@@ -66,8 +66,12 @@ def cleanup(paragraphs):
         p = re.sub(r'\n\n(\n+)', '\n\n', p)
         # Remove any leftovers from HTML
         p = re.sub(r'<.*?>', '', p)
-        # Remove captions
-        if p.find('hide caption') == -1 and p != 'Advertisement':
+
+        # Remove small annoyances
+        temp = p.lower()
+        if temp.find('hide caption') == 0 or temp == 'advertisement' or temp.startswith('see more'):
+            continue
+        else:
             cleaned.append(p)
 
     return cleaned

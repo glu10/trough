@@ -97,7 +97,7 @@ class TwoPaneView(NewsView):
         self.refreshing = False
 
     def get_then_open_link(self, gatherer):
-        active = gatherer.item(self.last_item_index)
+        active = gatherer.item(self.last_item_feed_name, self.last_item_index)
         if active:
             super().open_link(active.link)
 
