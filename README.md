@@ -33,8 +33,7 @@ convenient, this approach brings with it all of the heaviness of a browser, as w
 pages. Trough takes a different approach by being based entirely around textual scraping. This is lightweight and 
 allows users to decide exactly what they want to see. Scraping has its own downsides, since scraping rules break when 
 web designs inevitably change, and no collection of scraping rules could possibly be comprehensive. Due to this, Trough 
-is primarily aimed towards advanced users who are willing to tweak and create scraping rules in order to maintain their 
-own textual news reading nirvana.
+is primarily aimed towards advanced users who are willing to tweak and create scraping rules.
 
 #### Isn't just using a browser easier?
 For one or two stories absolutely, but habitually checking sites becomes tiresome.
