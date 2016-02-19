@@ -25,6 +25,5 @@ class Item:
         self.title = title
         self.description = description
         self.link = link
-        self.image = None  # optional
         self.article = None  # from scraping
 

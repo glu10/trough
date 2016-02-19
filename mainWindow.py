@@ -59,7 +59,6 @@ class MainWindow(Gtk.Window):
 
         return width, height
 
-
     def set_window_icon(self):
         """
         Attempts to find a generic RSS icon in the user's GTK theme, then associates it with the program if found.

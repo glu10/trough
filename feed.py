@@ -18,6 +18,7 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
+
 class Feed:
     """ An RSS Feed, contains RSS Items """
 
