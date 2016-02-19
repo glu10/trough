@@ -78,7 +78,7 @@ def cleanup(paragraphs):
 
         # Remove small annoyances
         temp = p.lower()
-        if temp.find('hide caption') == 0 or temp == 'advertisement' or temp.startswith('see more'):
+        if temp.find('hide caption') != -1 or temp == 'advertisement' or temp.startswith('see more'):
             continue
         else:
             cleaned.append(p)
