@@ -18,25 +18,27 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-import os, errno, json
-from collections import OrderedDict
+import os
 from gi.repository import Gio
 from feed import Feed
-from copy import deepcopy
-
+import copy
+from utilityFunctions import load_file, write_file
 
 class Preferences:
     """ Deals with configuration data that survives between sessions
         Examples are appearance settings, added feeds, filters, etc. """
 
-    def __init__(self):
+    def __init__(self, load_from_file=False):
         self.preferences_directory = os.path.join(os.path.expanduser('~'), '.config', 'trough')
         self.preferences_file = 'preferences.json'
         self.preferences = self.default_preferences()
 
+        if load_from_file:
+            self.load_preferences()
+
     @staticmethod
     def default_preferences():
-        preferences = OrderedDict()  # Ordered dict for readability
+        preferences = dict()
         preferences['Appearance'] = Preferences.default_appearance_preferences()
         preferences['Feeds'] = Preferences.default_feeds_preferences()
         preferences['Filtration'] = Preferences.default_filtration_preferences()
@@ -99,9 +101,8 @@ class Preferences:
     def retrieval_preferences(self):
         return self.preferences['Retrieval']
 
-    def load_config(self):
-        self.ensure_directory_exists(self.preferences_directory)
-        self.preferences = self.load_file(self.preferences_directory, self.preferences_file, self.preferences)
+    def load_preferences(self):
+        self.preferences = load_file(self.preferences_directory, self.preferences_file, self.preferences)
 
         if not self.preferences['Feeds']:  # If there were no feeds listed in the preferences file
             self.preferences['Feeds'] = dict()  # Replace None with an empty dictionary
@@ -111,15 +112,6 @@ class Preferences:
             for feed_name, feed_attributes in self.preferences['Feeds'].items():
                 feed_object_dict[feed_name] = Feed.from_dict(feed_attributes)
             self.preferences['Feeds'] = feed_object_dict
-
-    @staticmethod
-    def ensure_directory_exists(directory):
-        """ Checks to see if the given directory exists, and if it doesn't creates it. """
-        try:
-            os.makedirs(directory)
-        except OSError as exception:
-            if exception.errno != errno.EEXIST:
-                raise
 
     def feeds(self):
         return self.preferences['Feeds']
@@ -137,45 +129,20 @@ class Preferences:
         self.preferences['Feeds'][name] = Feed(name, uri)
         self.update_preferences(self.preferences)
 
-    @staticmethod
-    def update_file(containing_directory, filename, data):
-        file_path = os.path.join(containing_directory, filename)
-        with open(file_path, 'w') as data_file:
-            json.dump(data, data_file)
+    def write_preferences(self):
+        write_file(self.preferences_directory, self.preferences_file, self.serialize_preferences(self.preferences))
 
     def update_preferences(self, preferences):
         """ Convenience function """
-        self.update_file(self.preferences_directory, self.preferences_file, self.serialize_preferences(preferences))
-        self.preferences = preferences
+        assert(type(preferences) == dict)
+        if preferences:
+            self.preferences = preferences
+            self.write_preferences()
 
     @staticmethod
-    def serialize_preferences(preferences): # TODO: Optimize this, deep copying is wasteful
-        temp = deepcopy(preferences)
+    def serialize_preferences(preferences):
+        temp = copy.copy(preferences)
+        temp['Feeds'] = dict()
         for feed in preferences['Feeds'].values():
             temp['Feeds'][feed.name] = feed.to_dict()
         return temp
-
-    @staticmethod
-    def load_file(containing_directory, filename, defaults):
-        """ Check if the specified file exists, and if it doesn't make a file with the default configuration """
-        file_path = os.path.join(containing_directory, filename)
-        data = OrderedDict()
-
-        # If the file doesn't exist or is empty
-        if not os.path.isfile(file_path) or os.stat(file_path).st_size == 0:
-            if defaults:  # If there are defaults, write them to replace the empty/nonexistent file
-                Preferences.update_file(containing_directory, filename, defaults)
-                data = defaults
-            else:
-                return defaults  # Just fake as if we loaded the defaults
-        else:  # If there is a file
-            with open(file_path, 'r') as data_file:
-                try:
-                    data = json.load(data_file)
-                except json.decoder.JSONDecodeError:
-                    raise RuntimeError('Error parsing the JSON in ' + file_path + ', is it valid JSON?')
-                # Make sure that the information we are getting actually corresponds to real preferences.
-                if type(defaults) in (dict, OrderedDict) and sorted(data.keys()) != sorted(defaults.keys()):
-                    raise RuntimeError('Data in ' + file_path + ' did not match expectations,' +
-                                                                ' fix the problem or delete the file.')
-        return data

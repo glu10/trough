@@ -42,7 +42,9 @@ def select_rule(link, html):
             try:
                 return cleanup(scrape_rule(soup))
             except AttributeError:  # A rule couldn't find what it assumed would be there
-                return None
+                print('WARNING: The link', link, 'matched with' + identifier + ', but the scraping rule returned None.',
+                      'Using the default scraping rule as a fallback.')
+                return unknown_source(soup)
 
     return unknown_source(soup)
 
@@ -51,8 +53,15 @@ def unknown_source(soup):
         """ Making a best guess as to where the article is contained """
         paragraphs = cleanup(soup.find_all('p'))
 
-        # Only keep paragraphs past a certain threshold length
-        return [p for p in paragraphs if len(p) >= 20]  # TODO: Configuration for this threshold
+        # Only keeps paragraphs past a certain threshold length
+        filtered_paragraphs = [p for p in paragraphs if len(p) >= 20]  # TODO: Configuration for this threshold
+
+        if filtered_paragraphs:
+            return filtered_paragraphs
+        elif paragraphs:
+            return paragraphs
+        else:
+            return ['No paragraphs could be found.']
 
 
 def cleanup(paragraphs):

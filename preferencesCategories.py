@@ -20,7 +20,6 @@
 
 from abc import ABCMeta, abstractmethod
 from gi.repository import Gtk, Gdk, Gio
-from collections import OrderedDict
 from addFeed import AddFeed
 import utilityFunctions
 from preferences import Preferences
@@ -30,7 +29,7 @@ from feed import Feed
 class PreferencesCategory(metaclass=ABCMeta):
 
     def __init__(self, preferences, label):
-        self.choices = OrderedDict()
+        self.choices = dict()
         if preferences[label] is not None:
             self.choices = preferences[label].copy()  # Copying to prevent overwriting preferences until final okay.
         self.label = label

@@ -1,6 +1,5 @@
 ## High Priority
 
-* Change Trough from Gtk.Window to Gtk.Application + write cache on_quit()
 * Batch story fetch support
 * Filtration (filtration text color + hide completely/send-to-bottom)
 * Write unit tests
@@ -19,6 +18,6 @@
 * User Agent spoofing per feed (Reason: could make scraping certain sites easier by faking mobile)
 * Refresh restriction per feed (ignore refresh of feed if last one was within x amount of time, would need caching).
 * Shuffling display order of feeds option
-* Ctrl+Scroll on-the-fly adjustment of font size (persistence here would be tricky without wasteful writing)
+* Ctrl+Scroll on-the-fly adjustment of font size (would require writing preferences on_quit())
 * Configurable give-up time for network requests (should the user even be thinking about this?)
 * Font color through CSS use to replace use of deprecated function.

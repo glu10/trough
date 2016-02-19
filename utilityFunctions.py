@@ -25,6 +25,9 @@ The functions are being declared here for consistency's sake.
 
 import feedparser
 from gi.repository import Gtk, Gdk, Gio
+import os
+import json
+import errno
 
 def feedparser_parse(uri):
     """
@@ -44,13 +47,66 @@ def feedparser_parse(uri):
         return None
 
 
+""" FILE OPERATIONS """
+
+
+def ensure_directory_exists(directory):
+    """ Checks to see if the given directory exists, and if it doesn't creates it. """
+    try:
+        os.makedirs(directory)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
+
+
+def load_file(containing_directory, filename, defaults):
+    """ Check if the specified file exists, and if it doesn't make a file with the default configuration """
+
+    ensure_directory_exists(containing_directory)
+
+    file_path = os.path.join(containing_directory, filename)
+    data = dict()
+
+    # If the file doesn't exist or is empty
+    if not os.path.isfile(file_path) or os.stat(file_path).st_size == 0:
+        if defaults:  # If there are defaults, write them to replace the empty/nonexistent file
+            write_file(containing_directory, filename, defaults)
+            data = defaults
+        else:
+            return defaults  # Just fake as if we loaded the defaults
+    else:  # If there is a file
+        with open(file_path, 'r') as data_file:
+            try:
+                data = json.load(data_file)
+            except json.decoder.JSONDecodeError:
+                raise RuntimeError('Error parsing the JSON in ' + file_path + ', is it valid JSON?')
+            # Make sure that the information we are getting actually corresponds to real preferences.
+            if defaults and type(defaults==dict) and sorted(data.keys()) != sorted(defaults.keys()):
+                raise RuntimeError('Data in ' + file_path + ' did not match expectations,' +
+                                                            ' fix the problem or delete the file.')
+    return data
+
+
+def write_file(containing_directory, filename, data):
+
+    ensure_directory_exists(containing_directory)
+
+    file_path = os.path.join(containing_directory, filename)
+    with open(file_path, 'w') as data_file:
+        json.dump(data, data_file)
+
+""" END FILE OPERATIONS """
+
+
 """ GENERIC DIALOGS """
+
 
 def warning_popup(window, first, second):
     warning = Gtk.MessageDialog(window, 0, Gtk.MessageType.WARNING, Gtk.ButtonsType.OK, first)
     warning.format_secondary_text(second)
     warning.run()
     warning.destroy()
+
 
 def decision_popup(window, first, second):
     decision = Gtk.MessageDialog(window, 0, Gtk.MessageType.WARNING, Gtk.ButtonsType.OK_CANCEL, first)
@@ -85,7 +141,6 @@ def make_button(theme_icon_string=None, backup_icon_string=None, signal=None, fu
         button.set_tooltip_text(tooltip_text)
 
     return button
-
 
 
 def string_to_RGBA(rgba_string):

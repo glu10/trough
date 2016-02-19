@@ -36,10 +36,10 @@ from gi.repository import Gdk
 class Gatherer:
     """ Gatherer is a singleton responsible for handling network requests """
 
-    def __init__(self, parent, config):
+    def __init__(self, parent, preferences, cache):
         self.parent = parent
-        self.config = config
-        self.cache = Cache()
+        self.preferences = preferences
+        self.cache = cache
         self.request_queue = Queue()  # Can contain Feed Requests and Item (scraping) requests
         self.fulfilled_feed_queue = Queue()
         self.fulfilled_scrape_queue = Queue()
@@ -59,7 +59,7 @@ class Gatherer:
         self.parent.emit(*args)
 
     def request_feeds(self):
-        for feed in self.config.feed_list():
+        for feed in self.preferences.feed_list():
             self.request(feed)
 
     def request(self, request):
@@ -85,7 +85,7 @@ class Gatherer:
             return None
 
     def item(self, feed_name, index):
-        feeds = self.config.feeds()
+        feeds = self.preferences.feeds()
         if feed_name and feed_name in feeds:
             feed = feeds[feed_name]
             if feed.items and 0 <= index < len(feed.items):
@@ -151,6 +151,7 @@ class GathererWorkerThread(Thread):
     def gather_item(self, item):
         if not item.article:
             hit = self.cache.query(item.link)
+
             if hit:
                 item.article = hit
             else:

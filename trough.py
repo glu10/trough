@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
     Trough - a GTK+ RSS news reader
-    Copyright (C) 2015 Andrew Asp
+    Copyright (C) 2016 Andrew Asp
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -17,170 +17,51 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gio, Gdk, GLib, GObject
-from addFeed import AddFeed
+import sys
+import signal
+from gi.repository import Gtk, Gdk, Gio, GLib
+from mainWindow import MainWindow
 from preferences import Preferences
-from twoPaneView import TwoPaneView
-from threePaneView import ThreePaneView
-from gatherer import Gatherer
-from preferencesWindow import PreferencesWindow
-from utilityFunctions import make_button
+from cache import Cache
 
-class Trough(Gtk.Window):
 
-    # __gsignals__ is used to register the names of custom signals
-    __gsignals__ = {'item_scraped_event': (GObject.SIGNAL_RUN_FIRST, None, ()),
-                    'feed_gathered_event': (GObject.SIGNAL_RUN_FIRST, None, ())}
-
+class Trough(Gtk.Application):
     def __init__(self):
-        Gtk.Window.__init__(self, title="Trough")
+        super().__init__(application_id='org.glu10.trough', flags=Gio.ApplicationFlags.FLAGS_NONE)
+        self.main_window = None
+        self.preferences = None
+        self.cache = None
+        self.connect('activate', self.do_activate)
 
-        # Signals
-        self.connect('delete-event', Gtk.main_quit)
-        self.connect('key_press_event', self.on_key_press)
-        self.connect('item_scraped_event', self.on_item_scraped)
-        self.connect('feed_gathered_event', self.on_feed_gathered)
+    def do_startup(self):
+        """ Called by the GTK main loop before activate """
+        Gtk.Application.do_startup(self)
+        self.preferences = Preferences(load_from_file=True)
+        self.cache = Cache(load_from_file=True)
 
-        self.set_default_size(1000, 800)  # TODO: Is there a more intelligent way to set this according to screen size?
-        self.set_window_icon()
-        self.config = Preferences()
-        self.config.load_config()
-        self.header_bar = self.create_header()
+    def do_activate(self, *args):
+        """ Called by the GTK main loop when ready for display """
+        if not self.main_window:
+            self.main_window = MainWindow(self.preferences, self.cache, application=self, title='Trough')
+            self.main_window.connect('delete_event', self.on_quit)
+            self.add_window(self.main_window)
+            self.main_window.present()
 
-        self.gatherer = Gatherer(self, self.config)
-        self.current_view = None
-        self.switch_view()
-        self.show_all()
+    def on_quit(self, action, param):
+        self.cache.write_cache()
+        self.quit()
 
-        self.gatherer.request_feeds()
+if __name__ == '__main__':
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # Respond to Ctrl+C
 
-    def set_window_icon(self):
-        """
-        Attempts to find a generic RSS icon in the user's GTK theme, then associates it with the program if found.
-        """
-        try:
-            theme = Gtk.IconTheme.get_default()
-            icon = theme.lookup_icon("rss", 32, Gtk.IconLookupFlags.GENERIC_FALLBACK)
-            if icon:
-                icon = icon.load_icon()
-                self.set_icon(icon)
-        except GLib.GError:  # If the icon theme doesn't have an icon for RSS it's okay, purely visual
-            pass
+    # These init calls are needed because of multi-threading
+    GLib.threads_init()
+    Gdk.threads_init()
 
-    def switch_view(self):
-        """
-        Activates the view currently chosen in the preferences and returns it.
-        """
-        view_key = self.config.appearance_preferences()['View']
-        views = {'Two-Pane': TwoPaneView, 'Three-Pane': ThreePaneView}
-        view_class = views[view_key]
+    # Start things up
+    trough = Trough()
+    trough.run(sys.argv)
 
-        if type(self.current_view) != view_class:  # Will the new view actually be different from the current?
-            if self.current_view:  # Do we even have a current view? (we don't if just starting up)
-                self.current_view.destroy_display()
 
-            self.current_view = view_class(self.config, self.gatherer)  # Make the new view
-            self.current_view.populate(self.config.feed_list())
-            self.add(self.current_view.top_level())
-            self.show_all()
 
-        return self.current_view
-
-    def create_header(self):
-        header_bar = Gtk.HeaderBar(title="Trough", show_close_button=True)
-        header_bar.pack_start(self.create_add_button())
-        header_bar.pack_start(self.create_preferences_button())
-        header_bar.pack_start(self.create_refresh_button())
-        self.set_titlebar(header_bar)
-        return header_bar
-
-    def create_add_button(self):
-        add_button = make_button(theme_icon_string="add", tooltip_text="Quickly add a feed",
-                                 signal="clicked", function=self.on_add_clicked)
-        return add_button
-
-    def create_preferences_button(self):
-        preferences_button = make_button(theme_icon_string='gtk-preferences', backup_icon_string='preferences-system',
-                                         tooltip_text="Preferences", signal="clicked",
-                                         function=self.on_preferences_clicked)
-        return preferences_button
-
-    def create_refresh_button(self):
-        refresh_button = make_button(theme_icon_string="view-refresh", tooltip_text="Refresh",
-                                     signal="clicked", function=self.on_refresh_clicked)
-        refresh_button.set_focus_on_click(False)  # Don't keep it looking "pressed" after clicked
-        return refresh_button
-
-    def on_add_clicked(self, widget=None):
-        dialog = AddFeed(self)
-        response = dialog.get_response(self.config.feeds())
-
-        if response:
-            self.config.add_feed(response.name, response.uri)
-            self.on_refresh_clicked()  # Do a convenience refresh
-
-    def on_preferences_clicked(self, widget=None):
-        pw = PreferencesWindow(self, self.config)
-        response = pw.run()
-        if response == Gtk.ResponseType.OK:
-            pw.apply_choices()
-        pw.destroy()
-
-    def on_refresh_clicked(self, widget=None):
-        self.current_view.refresh()
-
-    @staticmethod
-    def do_scroll(widget, scroll):
-        try:
-            widget.do_scroll_child(widget, scroll, False)
-        except AttributeError:
-            pass
-
-    # TODO: It would be better to have this be in the view class but putting it here for now
-    def on_item_scraped(self, unnecessary_arg=None):
-        while True:
-            item = self.gatherer.grab_scrape_result()
-            if item and item.article:
-                self.current_view.receive_story(item)
-            else:
-                break
-
-    # TODO: It would be better to have this be in the view class but putting it here for now
-    def on_feed_gathered(self, unnecessary_arg=None):
-        while True:
-            feed = self.gatherer.grab_feed_result()
-            if feed and feed.items:
-                self.current_view.receive_feed(feed)
-            else:
-                break
-
-    # TODO: Idea: have a hotkey to add links to a buffer then you can open them all at once.
-    def on_key_press(self, widget, event):
-        key = Gdk.keyval_name(event.keyval)
-        if key == "F5":
-            self.on_refresh_clicked()
-        elif key == "Left":
-            self.current_view.change_position(-1)
-        elif key == "Right":
-            self.current_view.change_position(1)
-        elif key == "Up":
-            self.do_scroll(widget, Gtk.ScrollType.STEP_BACKWARD)
-        elif key == "Down":
-            self.do_scroll(widget, Gtk.ScrollType.STEP_FORWARD)
-        elif key == "Return":
-            if event.state & Gdk.ModifierType.CONTROL_MASK:
-                self.current_view.get_then_open_link(self.gatherer)
-            else:
-                self.current_view.change_position(0)
-        else:
-            pass
-
-trough = Trough()
-trough.show_all()
-
-# These init calls are necessary because worker threads emit signals
-GLib.threads_init()
-Gdk.threads_init()
-
-Gtk.main()
 

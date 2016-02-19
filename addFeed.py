@@ -19,7 +19,6 @@
 """
 
 from gi.repository import Gtk
-from collections import OrderedDict
 import utilityFunctions
 
 
@@ -111,7 +110,7 @@ class AddFeed(Gtk.Dialog):
 
     @staticmethod
     def check_existence(name, feed_container):  # TODO: This method is terrible and should be removed/refactored
-        if type(feed_container) in (dict, OrderedDict):
+        if type(feed_container) == dict:
             return name in feed_container
         elif type(feed_container) == Gtk.ListStore:
             for row in feed_container:
@@ -119,7 +118,9 @@ class AddFeed(Gtk.Dialog):
                     return True
             return False
         else:
-            raise RuntimeError("An invalid feed list container of type " + str(type(feed_container)) + " was passed to AddFeed.")
+            raise RuntimeError("An invalid feed list container of type " + str(type(feed_container)) +
+                               " was passed to AddFeed.")
+
 
 class AddFeedResponse:
     """ Organizes the response information in an easy format """

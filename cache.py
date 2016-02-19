@@ -18,38 +18,35 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-from preferences import Preferences
 from threading import RLock
+from utilityFunctions import load_file, write_file
 import os
 
 
 def synchronize_cache(func):
         def wrapper(self, *args):
             with self.lock:
-                func(self, *args)
+                return func(self, *args)
         return wrapper
 
 
 class Cache:
 
-    def __init__(self):
+    def __init__(self, load_from_file=False):
         self.cache_directory = os.path.join(os.path.expanduser('~'), '.cache', 'trough')
-        Preferences.ensure_directory_exists(self.cache_directory)
 
         self.cache_file = 'cache.json'
-        previous = Preferences.load_file(self.cache_directory, self.cache_file, dict())
-
         self.cache = dict()
-        for key, value in previous.items():
-            self.put(key, value, False)
-
         self.lock = RLock()  # Need an RLock as opposed to a Lock because of nested function calls
+
+        if load_from_file:
+            self.load_cache()
 
     @synchronize_cache
     def clear(self):
         """ Empties the current cache and the cache file """
         self.cache = dict()
-        self.write_out()
+        self.write_cache()
 
     @synchronize_cache
     def put(self, identifier, item, fresh=True):
@@ -67,14 +64,23 @@ class Cache:
             return None
 
     @synchronize_cache
-    def write_out(self):
+    def load_cache(self):
+        """ Loads the cache from the cache file """
+        previous = load_file(self.cache_directory, self.cache_file, dict())
+
+        self.cache = dict()
+        for key, value in previous.items():
+            self.put(key, value, False)
+
+    @synchronize_cache
+    def write_cache(self):
         """ Write the cache to the cache file """
         temp = dict()
         for key, value in self.cache.items():
             if value.should_keep():
                 temp[key] = value.item  # Unpack the item
 
-        Preferences.update_file(self.cache_directory, self.cache_file, temp)
+        write_file(self.cache_directory, self.cache_file, temp)
 
 
 class CacheItem:
