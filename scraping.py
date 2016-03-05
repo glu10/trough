@@ -17,10 +17,8 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
-
-from bs4 import BeautifulSoup
 import re
-
+from bs4 import BeautifulSoup
 """
 This file contains scraping rules for fetching information that is linked to in an RSS feed.
 
@@ -34,16 +32,16 @@ It is planned to provide functionality that allows a user to add to or modify th
 """
 
 
-def select_rule(link, html):
-    soup = BeautifulSoup(html, 'html.parser')
-
-    for identifier, scrape_rule in rules.items():  # see bottom of file for rules dictionary
-        if identifier in link:  # TODO: not a problem now but identifiers could clash, need better resolution
+def select_rule(link, soup, given_rules, job):
+    for rule in given_rules:
+        identifier = rule[0]
+        scrape_rule = rule[1]
+        if re.search(identifier, link):
             try:
-                return cleanup(scrape_rule(soup))
+                return cleanup(scrape_rule(soup, job))
             except AttributeError:  # A rule couldn't find what it assumed would be there
-                print('WARNING: The link', link, 'matched with' + identifier + ', but the scraping rule returned None.',
-                      'Using the default scraping rule as a fallback.')
+                print('NOTICE: The link', link, 'matched with ' + identifier +
+                      ', but the scraping rule returned None. Using the default scraping rule as a fallback.')
                 return unknown_source(soup)
 
     return unknown_source(soup)
@@ -65,10 +63,11 @@ def unknown_source(soup):
 
 
 def cleanup(paragraphs):
-
     cleaned = list()
     for p in paragraphs:
-        p = p.getText()
+
+        if type(p) != str:
+            p = p.getText()
 
         # Remove extraneous whitespace
         p = re.sub(r'\s+', ' ', p)
@@ -82,68 +81,78 @@ def cleanup(paragraphs):
             continue
         else:
             cleaned.append(p)
-
     return cleaned
 
 
-def abc_news(soup):
+def abc_news(soup, job):
     return soup.findAll('p', {'itemprop': 'articleBody'})
 
 
-def bloomberg(soup):
+def bloomberg(soup, job):
     return soup.find('div', {'class': 'article-body__content'}).findAll('p')
 
 
-def cnn(soup):
-    return soup.findAll('p', 'zn-body__paragraph')
+def cnn(soup, job):
+    result = soup.findAll('p', 'zn-body__paragraph')
+    # Fixing a problem where introductory (CNN) does not have a space after it, or has an unnecessary one before it.
+    for i, p in enumerate(result):
+        result[i] = p.getText()
+        if re.search(r'\(CNN\)', result[i]):
+            result[i] = re.sub(r'^ \(CNN\)', '(CNN)', result[i])
+            result[i] = re.sub(r'\(CNN\)', '(CNN) ', result[i])
+            break
+
+    return result
 
 
-def fox_news(soup):
+def fox_news(soup, job):
     return soup.find('article').findAll('p')
 
 
-def huffington_post(soup):
+def huffington_post(soup, job):
     return soup.find('div', {'class': 'entry-component__content'}).findAll('p')
 
 
-def nbc_news(soup):
+def nbc_news(soup, job):
     return soup.find('div', {'class': 'article-body'}).findAll('p')
 
 
-def new_york_times(soup):
+def new_york_times(soup, job):
     return soup.find('article', {'id': 'story'}).findAll('p')
 
 
-def npr(soup):
+def npr(soup, job):
     return soup.find('div', {'id': 'storytext'}).find_all('p')
 
 
-def reuters(soup):
+def reuters(soup, job):
     return soup.find('span', {'id': 'articleText'}).findAll('p')
 
 
-def time(soup):
+def time(soup, job):
     return soup.find('div', {'class': 'readingpane'}).findAll('p')
 
 
-def usa_today(soup):
+def usa_today(soup, job):
     return soup.find('div', {'itemprop': 'articleBody'}).findAll('p')
 
 
-def washington_post(soup):
+def washington_post(soup, job):
     return soup.find('article', {'itemprop': 'articleBody'}).findAll('p')
 
 
-rules = {'abcnews.go.com': abc_news,
-         'bloomberg.com': bloomberg,
-         'cnn.com': cnn,
-         'foxnews.com': fox_news,
-         'huffingtonpost.com': huffington_post,
-         'nbcnews.com': nbc_news,
-         'nytimes.com': new_york_times,
-         'npr.org': npr,
-         'reuters.com': reuters,
-         'time.com': time,
-         'usatoday.com': usa_today,
-         'washingtonpost.com': washington_post,
+rules = {r'abcnews.go.com': abc_news,
+         r'bloomberg.com': bloomberg,
+         r'cnn.com': cnn,
+         r'foxnews.com': fox_news,
+         r'huffingtonpost.com': huffington_post,
+         r'nbcnews.com': nbc_news,
+         r'nytimes.com': new_york_times,
+         r'npr.org': npr,
+         r'reuters.com': reuters,
+         r'time.com': time,
+         r'usatoday.com': usa_today,
+         r'washingtonpost.com': washington_post,
          }
+
+ordered_rules = sorted(rules.items(), key=lambda x: len(x[0]))

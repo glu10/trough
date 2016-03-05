@@ -42,7 +42,7 @@ class Preferences:
         preferences['Appearance'] = Preferences.default_appearance_preferences()
         preferences['Feeds'] = Preferences.default_feeds_preferences()
         preferences['Filtration'] = Preferences.default_filtration_preferences()
-        preferences['Retrieval'] = Preferences.default_retrieval_preferences()
+        preferences['Scraping'] = Preferences.default_scraping_preferences()
         return preferences
 
     @staticmethod
@@ -80,13 +80,10 @@ class Preferences:
         return p
 
     @staticmethod
-    def default_retrieval_preferences():  # TODO: Support for auto-refresh on a feed-by-feed basis would be nice
+    def default_scraping_preferences():  # TODO: Support for auto-refresh on a feed-by-feed basis would be nice
         p = dict()
-        p['Refresh When Opened'] = True
-        p['Auto-refresh'] = False
-        p['Auto-refresh Interval Time'] = 30   # Non-negative value, cap at a max value
-        p['Auto-refresh Unit'] = "Minute"      # Second/Hour/Minute/Day
-        p['Scraping Strategy'] = 'Individual'  # By Feed/Individual/On Refresh
+        p['Scraping Rule Priority'] = "Default"
+
         return p
 
     def appearance_preferences(self):
@@ -98,8 +95,8 @@ class Preferences:
     def filtration_preferences(self):
         return self.preferences['Filtration']
 
-    def retrieval_preferences(self):
-        return self.preferences['Retrieval']
+    def scraping_preferences(self):
+        return self.preferences['Scraping']
 
     def load_preferences(self):
         self.preferences = load_file(self.preferences_directory, self.preferences_file, self.preferences)

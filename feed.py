@@ -22,7 +22,7 @@
 class Feed:
     """ An RSS Feed, contains RSS Items """
 
-    def __init__(self, name, uri, category=None, refresh_limit=None):
+    def __init__(self, name, uri, fake_feed_file=None, category=None, refresh_limit=None):
         self.name = name  # Externally enforced as unique
         self.uri = uri
         self.items = list()
@@ -45,5 +45,8 @@ class Feed:
         # Can't just use __dict__ because the items list is going to be excluded
         return {'name': self.name, 'uri': self.uri}
 
-    def __eq__(self, other):  # TODO: URI check?
+    def is_fake(self):
+        return not self.uri
+
+    def __eq__(self, other):
         return self.name == other.name

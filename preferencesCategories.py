@@ -196,15 +196,18 @@ class FeedsPreferences(PreferencesCategory):
     def create_display_area(self):
         grid = Gtk.Grid(column_homogeneous=True, row_homogeneous=True)
 
-        # TODO: Making a lot of buttons in nearly the same way, a general factory method would be nice
         remove_button = utilityFunctions.make_button(theme_icon_string="remove", tooltip_text="Remove selected feed",
                                                      signal="clicked", function=self.remove_selection)
 
         add_button = utilityFunctions.make_button(theme_icon_string="add", tooltip_text="Add a feed",
                                                   signal="clicked", function=self.add_feed)
 
+        edit_button = utilityFunctions.make_button(theme_icon_string="gtk-edit", tooltip_text="Edit selected feed",
+                                                   signal="clicked", function=self.edit_feed)
+
         grid.attach(remove_button, 0, 0, 1, 1)
-        grid.attach(add_button, 1, 0, 1, 1)
+        grid.attach(add_button,    1, 0, 1, 1)
+        grid.attach(edit_button,   2, 0, 1, 1)
 
         # List of Feeds
         for feed in self.choices.values():
@@ -221,8 +224,8 @@ class FeedsPreferences(PreferencesCategory):
         frame = Gtk.Frame()
         frame.add(scroll)
 
-        grid.attach(frame, 0, 1, 2, 10)
-        grid.attach(self.info_box, 2, 0, 3, 11)
+        grid.attach(frame, 0, 1, 3, 10)
+        grid.attach(self.info_box, 3, 0, 3, 11)
 
         if len(self.feed_list) > 0:
             self.attempt_selection(self.view.get_selection(), 0)
@@ -237,7 +240,6 @@ class FeedsPreferences(PreferencesCategory):
         info_label = Gtk.Label()
         info_label.set_markup('<b>' + 'Feed Information' + '</b>')
         info_label.set_alignment(0.5, 0)  # Center it
-
 
         sw = Gtk.ScrolledWindow()
         sw.set_policy(Gtk.PolicyType.ALWAYS, Gtk.PolicyType.ALWAYS)
@@ -308,6 +310,22 @@ class FeedsPreferences(PreferencesCategory):
             iter = self.feed_list.append([response.name, response.uri])
             self.view.get_selection().select_iter(iter)  # Selects the feed just added.
 
+    def edit_feed(self, widget):
+        selection = self.view.get_selection()
+        model, iter = selection.get_selected()
+        if iter:
+            """ Going to spawn an Add feed dialog, but with the current feed values pre-filled. """
+            name = model[iter][0]
+            uri = model[iter][1]
+
+            dialog = AddFeed(self.parent, feed=Feed(name, uri))
+            response = dialog.get_response(self.feed_list)
+            if response:
+                model[iter][0] = response.name
+                model[iter][1] = response.uri
+                self.feed_selected(selection)
+            return None
+
     def attempt_selection(self, selector, iter):
         if iter is not None:
             try:
@@ -342,9 +360,32 @@ class FiltrationPreferences(PreferencesCategory):
         return self.bold_label("Not implemented yet.")
 
 
-class RetrievalPreferences(PreferencesCategory):
-    def __init__(self, config):
-        super().__init__(config, 'Retrieval')
+class ScrapingPreferences(PreferencesCategory):
+
+    def __init__(self, preferences):
+        super().__init__(preferences, 'Scraping')
+
+        self.rule_priority_check = Gtk.CheckButton('Check custom rules before defaults')
+        self.rule_priority_check.connect('toggled', self.on_rule_priority_toggled)
 
     def create_display_area(self):
-        return self.bold_label("Not implemented yet.")
+        #TODO: Not used yet.
+        """
+        grid = Gtk.Grid(row_spacing=2, orientation=Gtk.Orientation.VERTICAL, column_homogeneous=True)
+
+        # Custom Scraping rules
+        grid.add(self.bold_label('Custom Rules'))
+        grid.add(self.rule_priority_check)
+
+        if self.choices['Scraping Rule Priority'] == 'Custom':
+            self.rule_priority_check.set_active(True)
+
+        return grid
+        """
+        return self.bold_label('Not implemented yet.')
+
+    def on_rule_priority_toggled(self, button):
+        if button.get_active():
+            self.choices['Scraping Rule Priority'] = 'Custom'
+        else:
+            self.choices['Scraping Rule Priority'] = 'Default'

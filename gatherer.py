@@ -25,6 +25,7 @@ from scraping import select_rule
 from item import Item
 from feed import Feed
 from collections import defaultdict
+from scrapeJob import ScrapeJob
 from cache import Cache
 
 # Threading imports
@@ -121,6 +122,7 @@ class GathererWorkerThread(Thread):
         self.fulfilled_scrape_queue = fulfilled_scrape_queue
         self.session = requests.Session()
         self.daemon = True
+        self.scrape_job = ScrapeJob(self.session)
 
     def notify_main_thread(self, signal):
         Gdk.threads_enter()
@@ -151,12 +153,11 @@ class GathererWorkerThread(Thread):
     def gather_item(self, item):
         if not item.article:
             hit = self.cache.query(item.link)
-
             if hit:
                 item.article = hit
             else:
-                article_html = self.session.get(item.link).content
-                item.article = select_rule(item.link, article_html)
+                item.article = self.scrape_job.scrape_until_done(item.link)
+                self.scrape_job.clear()
                 self.cache.put(item.link, item.article)
         return item
 

@@ -26,6 +26,7 @@ from cache import Cache
 
 
 class Trough(Gtk.Application):
+    """ Beginning of the application: init -> run() -> startup signal -> activate signal """
     def __init__(self):
         super().__init__(application_id='org.glu10.trough', flags=Gio.ApplicationFlags.FLAGS_NONE)
         self.main_window = None
@@ -34,13 +35,11 @@ class Trough(Gtk.Application):
         self.connect('activate', self.do_activate)
 
     def do_startup(self):
-        """ Called by the GTK main loop before activate """
         Gtk.Application.do_startup(self)
         self.preferences = Preferences(load_from_file=True)
         self.cache = Cache(load_from_file=True)
 
     def do_activate(self, *args):
-        """ Called by the GTK main loop when ready for display """
         if not self.main_window:
             self.main_window = MainWindow(self.preferences, self.cache, application=self, title='Trough')
             self.main_window.connect('delete_event', self.on_quit)

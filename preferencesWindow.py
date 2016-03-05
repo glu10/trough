@@ -21,6 +21,7 @@
 from gi.repository import Gtk
 from preferencesCategories import *
 
+
 class PreferencesWindow(Gtk.Dialog):
     def __init__(self, parent, config):
         Gtk.Dialog.__init__(self, 'Preferences', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
@@ -34,7 +35,7 @@ class PreferencesWindow(Gtk.Dialog):
                                        AppearancePreferences(self, self.preferences),
                                        FeedsPreferences(self, self.preferences),
                                        FiltrationPreferences(self.preferences),
-                                       RetrievalPreferences(self.preferences),
+                                       ScrapingPreferences(self.preferences),
                                       ]
 
         self.notebook = Gtk.Notebook()
