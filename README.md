@@ -4,7 +4,7 @@ Trough
 A GTK+ RSS news reader (currently in the early stages of development)
 
 ## Dependencies
-* Python 3.x+
+* Python 3.3+
 * [Feedparser](https://pypi.python.org/pypi/feedparser)
 * [BeautifulSoup 4](http://www.crummy.com/software/BeautifulSoup/)
 * [PyGObject](https://wiki.gnome.org/action/show/Projects/PyGObject)

@@ -23,6 +23,7 @@ from webbrowser import open_new_tab
 from gi.repository import Gtk, Pango
 from utilityFunctions import string_to_RGBA
 
+
 class NewsView(metaclass=ABCMeta):
 
     @abstractmethod
@@ -59,6 +60,7 @@ class NewsView(metaclass=ABCMeta):
         Retrieves the currently active story's url, then calls open_link
         """
 
+    @abstractmethod
     def populate(self, feeds):
         """
         Prepare already retrieved information for display
@@ -70,6 +72,13 @@ class NewsView(metaclass=ABCMeta):
         Clear the current contents of the view and requests fresh items
         """
 
+    @abstractmethod
+    def receive_feed(self, feed):
+        """
+        A worker thread delivered a feed to the view, add it (including its items) to the view
+        """
+
+    @abstractmethod
     def receive_story(self, item):
         """
         A worker thread delivered a story to the view, see if it is current then display it if so

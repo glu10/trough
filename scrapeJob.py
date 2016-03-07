@@ -20,21 +20,27 @@
 
 from collections import deque
 from bs4 import BeautifulSoup
-import scraping
-import re
-try:
-    import custom.custom_scraping as custom_scraping
-    custom_there = len(custom_scraping.ordered_rules) > 0 # also probes attribute error
-except (ImportError, AttributeError):
-    custom_there = False
+
+
+def check_link_for_cycle(func):
+        def wrapper(self, link):
+            assert(type(link) == str)
+            if self._add_link(link):
+                return func(self, link)
+            else:
+                raise RuntimeError('Link cycle detected on ' + link + 'Abandoning the scrape job.')
+        return wrapper
+
 
 class ScrapeJob:
-    """ Provides an API for scraping links. When multiple links need to be scraped for one job, detect cycles. """
+    """ Provides an API for requesting links for the resolution of a singular rule resolution job.
+        When multiple links need to be scraped for one job, detect cycles. """
 
-    def __init__(self, session):
+    def __init__(self, session, resolver):
         self.visited = set()
         self.to_be_visited = deque()
         self.session = session
+        self.resolver = resolver
 
     def clear(self):
         self.visited.clear()
@@ -43,54 +49,21 @@ class ScrapeJob:
     def makes_cycle(self, link):
         return link in self.visited
 
-    def add_link(self, link):
+    def _add_link(self, link):
         """ Returns True when no cycle was detected, False otherwise. """
         if self.makes_cycle(link):
-            print('Cycle in scrape job detected for the link ' + link + '. Abandoning the scrape job.')
             return False
         else:
             self.visited.add(link)
             self.to_be_visited.append(link)
             return True
 
-    def add_links(self, *args):
-        """ Convenience function """
-        for arg in args:
-            if not self.add_link(arg):
-                return False
-        return True
-
-    def single_scrape(self, link=None, scraping_function=None):
-        if link and self.makes_cycle(link):
-            return ['Scrape job was abandoned due to cyclic links.']
-        elif not link and self.to_be_visited:
-            link = self.to_be_visited.popleft()
-        else:
-            raise RuntimeError('A scrape job was called with no link to scrape.')
-
+    @check_link_for_cycle
+    def get_soup(self, link):
         html = self.session.get(link, headers={'User-Agent': 'Mozilla/5.0'}).content
-        soup = BeautifulSoup(html, 'html.parser')
+        return BeautifulSoup(html, 'html.parser')
 
-        if scraping_function:
-            return scraping_function(soup)
-
-        result = None
-        if custom_there:
-            result = scraping.select_rule(link, soup, custom_scraping.ordered_rules, self)
-        if not result:
-            result = scraping.select_rule(link, soup, scraping.ordered_rules, self)
-
-        return result
-
-    def scrape_until_done(self, args):
-        if args and not self.add_links(args):
-            return ['Scrape job was abandoned due to cyclic links.']
-        else:
-            paragraphs = list()
-            while self.to_be_visited:
-                result = self.single_scrape()
-                for p in result:
-                    paragraphs.append(p)
-
-            return paragraphs
+    @check_link_for_cycle
+    def get_contents(self, link):
+        return self.resolver.select_rule(link, self)
 

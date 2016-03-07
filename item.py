@@ -18,12 +18,26 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
+
 class Item:
     """ An RSS item """
-    def __init__(self, label, title, description, link):
+    def __init__(self, label, title='', description='', link=''):
         self.label = label
         self.title = title
         self.description = description
         self.link = link
         self.article = None  # from scraping
+
+    @classmethod
+    def from_href(cls, label, href):
+        from bs4.element import Tag
+        assert(type(href) == Tag)
+
+        link = href.get('href')
+        if link is None:
+            link = ''
+
+        return cls(label, title=href.text, link=link)
+
+
 
