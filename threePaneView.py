@@ -29,6 +29,7 @@ class ThreePaneView(NewsView):
         self.config = config
         self.gatherer = gatherer
         self.refreshing = False
+        self.shown_feeds = set()
 
         self.label_store = Gtk.ListStore(str)
         self.label_view = self.create_view(self.label_store, 'Feed', 0, self.show_new_headlines)
@@ -83,6 +84,7 @@ class ThreePaneView(NewsView):
 
     def refresh(self):
         self.refreshing = True
+        self.shown_feeds.clear()
         self.label_store.clear()
         self.headline_store.clear()
         self.gatherer.request_feeds()
@@ -123,7 +125,9 @@ class ThreePaneView(NewsView):
                     self.gatherer.request(item)
 
     def receive_feed(self, feed):
-        self.label_store.append([feed.name])
+        if feed.name not in self.shown_feeds:
+            self.shown_feeds.add(feed.name)
+            self.label_store.append([feed.name])
 
     def receive_story(self, item):  # TODO: Duplicated code, change to be common in NewsView later
         current_item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)

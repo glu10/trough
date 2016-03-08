@@ -17,6 +17,7 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
+from threading import Lock
 
 
 class Feed:
@@ -26,6 +27,7 @@ class Feed:
         self.name = name  # Externally enforced as unique
         self.uri = uri
         self.items = list()
+        self.lock = Lock()  # for preventing multiple requests
 
         # TO BE IMPLEMENTED:
         #self.category = category

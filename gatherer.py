@@ -141,36 +141,41 @@ class GathererWorkerThread(Thread):
     def serve_requests(self):
         while True:
             request = self.request_queue.get(block=True)
-            request_type = type(request)
 
-            if request_type == Feed:
-                feed = request
-                if feed.is_fake():
-                    self.gather_fake_feed(feed)
-                else:
-                    self.gather_feed(feed)
+            if request.lock.acquire(blocking=False):  # Can't use the cleaner with syntax because of non-blocking
 
-                self.fulfilled_feed_queue.put(feed)
-                self.notify_main_thread('feed_gathered_event')
+                try:
+                    request_type = type(request)
 
-            elif request_type == Item:
-                item = request
-                self.gather_item(item)
-                self.fulfilled_scrape_queue.put(item)
-                self.notify_main_thread('item_scraped_event')
+                    if request_type == Feed:
+                        feed = request
+                        if feed.is_fake():
+                            self.gather_fake_feed(feed)
+                        else:
+                            self.gather_feed(feed)
+                        self.fulfilled_feed_queue.put(feed)
+                        self.notify_main_thread('feed_gathered_event')
 
-            else:
-                raise RuntimeError('Invalid request of type ' + str(request_type) + ' given to GathererWorkerThread' +
-                                   ' the item was ' + str(request))
+                    elif request_type == Item:
+                        item = request
+                        if not item.article and item.link:
+                            self.gather_item(item)
+                            self.fulfilled_scrape_queue.put(item)
+                            self.notify_main_thread('item_scraped_event')
+
+                    else:
+                        raise RuntimeError('Invalid request of type ' + str(request_type) +
+                                           ' given to GathererWorkerThread the item was ' + str(request))
+                finally:
+                    request.lock.release()
 
     def gather_item(self, item):
-        if not item.article and item.link:
-            hit = self.cache.query(item.link)
-            if hit:
-                item.article = hit
-            else:
-                item.article = self.scrape_resolver.select_rule(item.link, self._new_scrape_job())
-                self.cache.put(item.link, item.article)
+        hit = self.cache.query(item.link)
+        if hit:
+            item.article = hit
+        else:
+            item.article = self.scrape_resolver.select_rule(item.link, self._new_scrape_job())
+            self.cache.put(item.link, item.article)
         return item
 
     def gather_fake_feed(self, feed):

@@ -28,29 +28,24 @@ class AddFeed(Gtk.Dialog):
         Gtk.Dialog.__init__(self, 'Add Feed', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                                           Gtk.STOCK_OK, Gtk.ResponseType.OK))
         self.set_default_size(150, 100)
-        self.missing_information = False  # Used for error display logic.
-
         self.feed = feed
-
-        box = self.get_content_area()
+        self.missing_information = False  # Used for error display logic.
 
         grid = Gtk.Grid(column_spacing=3, row_spacing=3, orientation=Gtk.Orientation.VERTICAL)
 
         self.name_label, self.name_entry = self.add_labeled_entry('Name of Feed', grid)
-
         self.fake_feed_check_button = self.add_labeled_check_button('Fake Feed', '(leave unchecked if unsure)',
                                                                     self.on_fake_feed_toggled, grid)
         self.uri_label, self.uri_entry = self.add_labeled_entry('URI', grid)
-
         self.error_label = Gtk.Label()
         self.error_label.set_markup('<span color="red">Fill in the missing information.</span>')
         grid.attach(self.error_label, 1, 4, 4, 1)
 
-        box.add(grid)
-
         if self.feed:  # If a feed was passed in
             self.fill_in_feed_information(self.feed)
 
+        box = self.get_content_area()
+        box.add(grid)
         self.show_all()
         self.error_label.hide()  # Is shown only if the information entered isn't complete.
 

@@ -33,6 +33,7 @@ class TwoPaneView(NewsView):
         self.last_item_feed_name = None
 
         self.refreshing = False  # Set to true while refreshing to ignore selection changes
+        self.shown_feeds = set()  # For preventing searching ListStores
 
         # GUI components
         self.top_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
@@ -89,6 +90,7 @@ class TwoPaneView(NewsView):
 
     def refresh(self):
         self.refreshing = True  # Toggling boolean as a hack to cover up the selection changed signal during the clear
+        self.shown_feeds.clear()
         self.item_store.clear()
         self.gatherer.request_feeds()
         TextFormat.empty(self.story_view)
@@ -107,8 +109,10 @@ class TwoPaneView(NewsView):
                 self.receive_feed(feed)
 
     def receive_feed(self, feed):
-        for pos, item in enumerate(feed.items):
-            self.item_store.append(list([feed.name, item.title, pos]))
+        if feed.name not in self.shown_feeds:
+            self.shown_feeds.add(feed.name)
+            for pos, item in enumerate(feed.items):
+                self.item_store.append(list([feed.name, item.title, pos]))
 
     def text_containing_widgets(self):
         return self.headline_view, self.story_view

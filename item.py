@@ -17,7 +17,7 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
-
+from threading import Lock
 
 class Item:
     """ An RSS item """
@@ -27,6 +27,7 @@ class Item:
         self.description = description
         self.link = link
         self.article = None  # from scraping
+        self.lock = Lock()  # prevents an item from accidentally being scraped by multiple threads at once
 
     @classmethod
     def from_href(cls, label, href):
