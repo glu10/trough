@@ -22,9 +22,18 @@ from abc import ABCMeta, abstractmethod
 from webbrowser import open_new_tab
 from gi.repository import Gtk, Pango
 from utilityFunctions import string_to_RGBA
+from textFormat import TextFormat
 
 
 class NewsView(metaclass=ABCMeta):
+
+    def __init__(self, preferences, gatherer):
+        self.preferences = preferences
+        self.gatherer = gatherer
+        self.received_feeds = set()  # Used to mask a feed being received multiple times due to loose coupling
+        self.last_item_index = -1
+        self.last_item_feed_name = None
+        self.content_scroll, self.content_view = self.create_content_box()
 
     @abstractmethod
     def top_level(self):
@@ -54,34 +63,61 @@ class NewsView(metaclass=ABCMeta):
         if url:
             open_new_tab(url)
 
-    @abstractmethod
-    def get_then_open_link(self, gatherer):
+    def get_then_open_link(self):
         """
         Retrieves the currently active story's url, then calls open_link
         """
+        active = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
+        if active:
+            self.open_link(active.link)
 
-    @abstractmethod
     def populate(self, feeds):
         """
         Prepare already retrieved information for display
         """
+        for feed in feeds:
+            if feed.items:
+                self.receive_feed(feed)
 
     @abstractmethod
     def refresh(self):
         """
         Clear the current contents of the view and requests fresh items
         """
+        self.received_feeds.clear()
+        self.last_item_index = -1
+        self.last_item_feed_name = None
+
+    def mark_feed(self, feed):
+        """
+        Mark a feed to prevent duplicate feeds.
+        A duplicate can occur due to the loose coupling between the gatherer and the view. Currently, any duplicates are
+        simply ignored since the time between the feed retrievals must have been short (back-to-back refreshes) and even
+        if potential differences did exist, it wouldn't be worth interrupting the user with the changes.
+        """
+        fresh = feed.name not in self.received_feeds
+        if fresh:
+            self.received_feeds.add(feed.name)
+        return fresh
 
     @abstractmethod
     def receive_feed(self, feed):
         """
-        A worker thread delivered a feed to the view, add it (including its items) to the view
+        A worker thread delivered a feed to the view, add it (including its items) to the view if it is not a duplicate.
         """
 
-    @abstractmethod
-    def receive_story(self, item):
+    def receive_article(self, item):
         """
-        A worker thread delivered a story to the view, see if it is current then display it if so
+        A worker thread delivered an article to the view, see if it is current then display it if so
+        """
+        current_item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
+        if item == current_item:
+            TextFormat.prepare_content_display(item, self.content_view)
+
+    @abstractmethod
+    def show_new_content(self, selection):
+        """
+        Display an item's content.
         """
 
     @abstractmethod

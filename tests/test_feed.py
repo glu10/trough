@@ -10,8 +10,13 @@ class TestFeed(unittest.TestCase):
     def tearDown(self):
         self.feed = None
 
+    def test_lock(self):
+        self.assertIsNotNone(self.feed.lock)
+        self.feed.lock.acquire(blocking=False)
+        self.feed.lock.release()
+
     def test_from_dict(self):
-        example_name = 'Harold'
+        example_name = 'Name here'
         example_uri = 'URI here'
 
         attribute_dict = {'name': example_name, 'uri': example_uri}

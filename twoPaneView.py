@@ -22,35 +22,44 @@ from gi.repository import Gtk, Gdk
 from gi.repository import Pango
 from newsView import NewsView
 from textFormat import TextFormat
-import utilityFunctions
+
 
 class TwoPaneView(NewsView):
-    """ GUI component where headlines and story contents are split apart """
-    def __init__(self, config, gatherer):
-        self.config = config
-        self.gatherer = gatherer
-        self.last_item_index = -1
-        self.last_item_feed_name = None
-
-        self.refreshing = False  # Set to true while refreshing to ignore selection changes
-        self.shown_feeds = set()  # For preventing searching ListStores
+    """ Pane 1: A list of RSS items (Feed name | Headline). Pane 2: Contents of the selected item. """
+    def __init__(self, preferences, gatherer):
+        super().__init__(preferences, gatherer)
 
         # GUI components
-        self.top_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        self.item_store = Gtk.ListStore(str, str, int)
-        self.headline_view = self.create_headline_view(self.item_store)
+        self.headline_store = self.create_headline_store()
+        self.headline_view = self.create_headline_view(self.headline_store)
         self.headline_scroll = self.create_headline_box(self.headline_view, 400, 200)
-        self.story_scroll, self.story_view = self.create_story_box()
+        self.headline_changed_handler = None
+        self.toggle_headline_listening()
 
-        self.update_appearance(config.appearance_preferences())
+        self.headline_content_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.headline_content_pane.pack1(self.headline_scroll, resize=False, shrink=False)  # Left
+        self.headline_content_pane.pack2(self.content_scroll, resize=True, shrink=True)  # Right
 
-        self.top_pane.pack1(self.headline_scroll, resize=False, shrink=False)  # Left
-        self.top_pane.pack2(self.story_scroll, resize=True, shrink=True)  # Right
+        self.update_appearance(preferences.appearance_preferences())
 
-    def create_headline_view(self, headline_store):
+    @staticmethod
+    def create_headline_store():
+        return Gtk.ListStore(str, str, int)
+
+    @staticmethod
+    def clear_store(store, listening_toggle_func):  # TODO: Find better way to clear store
+        """
+        There has to be a better way to do this. Clearing the store causes the cursor-changed signal to get
+        called over and over and over if we have a signal listener for it (which is horribly wasteful),
+        so just toggle the listener off then back on to avoid the problem.
+        """
+        listening_toggle_func()
+        store.clear()
+        listening_toggle_func()
+
+    @staticmethod
+    def create_headline_view(headline_store):
         tree_view = Gtk.TreeView(model=headline_store)
-        tree_view.get_selection().connect("changed", self.show_new_article)
-
         columns = ('Feed', 'Headline')
         for i in range(len(columns)):
             cell = Gtk.CellRendererText()
@@ -70,7 +79,7 @@ class TwoPaneView(NewsView):
         return headline_scroll
 
     @staticmethod
-    def create_story_box():
+    def create_content_box():
         text_scroll = Gtk.ScrolledWindow()
         text_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
         text_view = Gtk.TextView(editable=False, cursor_visible=False)
@@ -78,60 +87,55 @@ class TwoPaneView(NewsView):
         text_scroll.add(text_view)
         return text_scroll, text_view
 
+    @staticmethod
+    def toggle_tree_view_listening(tree_view, handler_id, function):
+        if handler_id:  # The handler exists, stop listening
+            tree_view.disconnect(handler_id)
+            return None
+        else:  # The handler doesn't exist, start listening
+            return tree_view.connect('cursor-changed', function)
+
+    def toggle_headline_listening(self):
+        self.headline_changed_handler = self.toggle_tree_view_listening(self.headline_view,
+                                                                        self.headline_changed_handler,
+                                                                        self.show_new_content)
+
     def top_level(self):
-        return self.top_pane
+        return self.headline_content_pane
 
     def change_position(self, delta):
         """ Switches keyboard focus between left and right pane """
         if delta < 0:
             self.headline_view.grab_focus()
         else:
-            self.story_view.grab_focus()
+            self.content_view.grab_focus()
 
     def refresh(self):
-        self.refreshing = True  # Toggling boolean as a hack to cover up the selection changed signal during the clear
-        self.shown_feeds.clear()
-        self.item_store.clear()
+        self.clear_store(self.headline_store, self.toggle_headline_listening)
+        TextFormat.empty(self.content_view)
+        super().refresh()
         self.gatherer.request_feeds()
-        TextFormat.empty(self.story_view)
-        self.last_item_index = -1
-        self.last_item_feed_name = None
-        self.refreshing = False
-
-    def get_then_open_link(self, gatherer):
-        active = gatherer.item(self.last_item_feed_name, self.last_item_index)
-        if active:
-            super().open_link(active.link)
-
-    def populate(self, feed_list):
-        for feed in feed_list:
-            if feed.items:
-                self.receive_feed(feed)
 
     def receive_feed(self, feed):
-        if feed.name not in self.shown_feeds:
-            self.shown_feeds.add(feed.name)
+        if self.mark_feed(feed):
             for pos, item in enumerate(feed.items):
-                self.item_store.append(list([feed.name, item.title, pos]))
+                self.headline_store.append(list([feed.name, item.title, pos]))
 
     def text_containing_widgets(self):
-        return self.headline_view, self.story_view
+        return self.headline_view, self.content_view
 
-    def receive_story(self, item):
-        current_item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
-        if item == current_item:
-            TextFormat.full_story(item, self.story_view)
+    def get_info_from_headline(self, headline):
+        self.last_item_feed_name = headline[0]
+        self.last_item_index = headline[2]
 
-    def show_new_article(self, selection):
-        if not self.refreshing and selection:
-            model, iter = selection.get_selected()
-            if model:
-                self.last_item_index = model[iter][2]
-                self.last_item_feed_name = model[iter][0]
-                item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
-                if item.article:
-                    TextFormat.full_story(item, self.story_view)
-                else:
-                    self.gatherer.request(item)
+    def show_new_content(self, tree_view):
+        model, it = tree_view.get_selection().get_selected()
+        if model and it:
+            self.get_info_from_headline(model[it])
+            item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
+            if item.article:
+                TextFormat.prepare_content_display(item, self.content_view)
+            else:
+                self.gatherer.request(item)
 
 

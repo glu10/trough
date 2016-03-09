@@ -146,7 +146,7 @@ class MainWindow(Gtk.Window):
         while True:
             item = self.gatherer.grab_scrape_result()
             if item and item.article:
-                self.current_view.receive_story(item)
+                self.current_view.receive_article(item)
             else:
                 break
 
@@ -174,7 +174,7 @@ class MainWindow(Gtk.Window):
             self.do_scroll(widget, Gtk.ScrollType.STEP_FORWARD)
         elif key == "Return":
             if event.state & Gdk.ModifierType.CONTROL_MASK:
-                self.current_view.get_then_open_link(self.gatherer)
+                self.current_view.get_then_open_link()
             else:
                 self.current_view.change_position(0)
         else:

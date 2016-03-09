@@ -31,7 +31,7 @@ class TextFormat:
             return text_view.set_buffer(Gtk.TextBuffer())
 
     @staticmethod
-    def full_story(item, textview=None):
+    def prepare_content_display(item, textview=None):
         if textview is None:
             text_view = Gtk.TextView()
         else:
@@ -50,8 +50,8 @@ class TextFormat:
         text_view.set_buffer(text_buffer)
 
         TextFormat.headline(item.title, text_buffer)
-        TextFormat.rss_description(item.description, text_buffer)
-        TextFormat.scraped_story(item, text_buffer)
+        TextFormat.description(item.description, text_buffer)
+        TextFormat.article(item, text_buffer)
 
         # TODO: The link button doesn't work at the moment and looked horrible even when it did.
         # TextFormat.link_button(item.link, text_buffer, text_view)
@@ -64,17 +64,17 @@ class TextFormat:
         text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), headline, center)
 
     @staticmethod
-    def scraped_story(item, text_buffer):
+    def description(description, text_buffer):
+        if description:
+            center = text_buffer.create_tag("description", justification=Gtk.Justification.CENTER)
+            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), "\n\n" + description, center)
+
+    @staticmethod
+    def article(item, text_buffer):
         text_buffer.insert(TextFormat.__pos(text_buffer), "\n\n")
         paragraph = text_buffer.create_tag("paragraph", pixels_below_lines=5, pixels_above_lines=5)
         for p in item.article:
             text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), p + "\n", paragraph)
-
-    @staticmethod
-    def rss_description(description, text_buffer):
-        if description:
-            center = text_buffer.create_tag("description", justification=Gtk.Justification.CENTER)
-            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), "\n\n" + description, center)
 
     @staticmethod
     def link_button(link, text_buffer, text_view):
