@@ -36,6 +36,8 @@ class TwoPaneView(NewsView):
         self.headline_changed_handler = None
         self.toggle_headline_listening()
 
+        self.content_scroll, self.content_view = self.create_content_box()
+
         self.headline_content_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self.headline_content_pane.pack1(self.headline_scroll, resize=False, shrink=False)  # Left
         self.headline_content_pane.pack2(self.content_scroll, resize=True, shrink=True)  # Right

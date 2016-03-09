@@ -33,7 +33,6 @@ class NewsView(metaclass=ABCMeta):
         self.received_feeds = set()  # Used to mask a feed being received multiple times due to loose coupling
         self.last_item_index = -1
         self.last_item_feed_name = None
-        self.content_scroll, self.content_view = self.create_content_box()
 
     @abstractmethod
     def top_level(self):
