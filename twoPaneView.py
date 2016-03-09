@@ -119,7 +119,7 @@ class TwoPaneView(NewsView):
     def receive_feed(self, feed):
         if self.mark_feed(feed):
             for pos, item in enumerate(feed.items):
-                self.headline_store.append(list([feed.name, item.title, pos]))
+                self.headline_store.append([feed.name, item.title, pos])
 
     def text_containing_widgets(self):
         return self.headline_view, self.content_view
