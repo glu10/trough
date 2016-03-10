@@ -23,7 +23,7 @@ from threading import Lock
 class Feed:
     """ An RSS Feed, contains RSS Items """
 
-    def __init__(self, name, uri, fake_feed_file=None, category=None, refresh_limit=None):
+    def __init__(self, name, uri, category=None, refresh_limit=None):
         self.name = name  # Externally enforced as unique
         self.uri = uri
         self.items = list()

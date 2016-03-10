@@ -126,8 +126,8 @@ class GathererWorkerThread(Thread):
         self.request_queue = request_queue
         self.fulfilled_feed_queue = fulfilled_feed_queue
         self.fulfilled_scrape_queue = fulfilled_scrape_queue
-
         self.session = requests.Session()
+        self.scrape_job = ScrapeJob(self.session, self.scrape_resolver)
         self.daemon = True
 
     def notify_main_thread(self, signal):
@@ -135,14 +135,15 @@ class GathererWorkerThread(Thread):
         self.parent.emit(signal)
         Gdk.threads_leave()
 
-    def _new_scrape_job(self):
-        return ScrapeJob(self.session, self.scrape_resolver)
+    def _fresh_scrape_job(self):
+        self.scrape_job.clear()
+        return self.scrape_job
 
     def serve_requests(self):
         while True:
             request = self.request_queue.get(block=True)
 
-            if request.lock.acquire(blocking=False):  # Can't use the cleaner with syntax because of non-blocking
+            if request.lock.acquire(blocking=False):  # Can't use the cleaner "with lock:" syntax due to non-blocking
 
                 try:
                     request_type = type(request)
@@ -153,15 +154,18 @@ class GathererWorkerThread(Thread):
                             self.gather_fake_feed(feed)
                         else:
                             self.gather_feed(feed)
-                        self.fulfilled_feed_queue.put(feed)
-                        self.notify_main_thread('feed_gathered_event')
+
+                        if feed.items:
+                            self.fulfilled_feed_queue.put(feed)
+                            self.notify_main_thread('feed_gathered_event')
 
                     elif request_type == Item:
                         item = request
                         if not item.article and item.link:
                             self.gather_item(item)
-                            self.fulfilled_scrape_queue.put(item)
-                            self.notify_main_thread('item_scraped_event')
+                            if item.article:
+                                self.fulfilled_scrape_queue.put(item)
+                                self.notify_main_thread('item_scraped_event')
 
                     else:
                         raise RuntimeError('Invalid request of type ' + str(request_type) +
@@ -174,12 +178,12 @@ class GathererWorkerThread(Thread):
         if hit:
             item.article = hit
         else:
-            item.article = self.scrape_resolver.select_rule(item.link, self._new_scrape_job())
+            item.article = self.scrape_resolver.select_rule(item.link, self._fresh_scrape_job())
             self.cache.put(item.link, item.article)
         return item
 
     def gather_fake_feed(self, feed):
-        feed.items = self.fake_feed_resolver(feed.label, self._new_scrape_job())
+        feed.items = self.fake_feed_resolver.select_rule(feed.name, self._fresh_scrape_job())
 
     @staticmethod
     def gather_feed(feed):

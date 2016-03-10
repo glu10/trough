@@ -33,6 +33,7 @@ class NewsView(metaclass=ABCMeta):
         self.received_feeds = set()  # Used to mask a feed being received multiple times due to loose coupling
         self.last_item_index = -1
         self.last_item_feed_name = None
+        self.content_view = None
 
     @abstractmethod
     def top_level(self):
@@ -89,7 +90,7 @@ class NewsView(metaclass=ABCMeta):
 
     def mark_feed(self, feed):
         """
-        Mark a feed to prevent duplicate feeds.
+        Mark a feed as seen to prevent duplicate feeds.
         A duplicate can occur due to the loose coupling between the gatherer and the view. Currently, any duplicates are
         simply ignored since the time between the feed retrievals must have been short (back-to-back refreshes) and even
         if potential differences did exist, it wouldn't be worth interrupting the user with the changes.
@@ -109,6 +110,7 @@ class NewsView(metaclass=ABCMeta):
         """
         A worker thread delivered an article to the view, see if it is current then display it if so
         """
+        assert(self.content_view is not None)
         current_item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
         if item == current_item:
             TextFormat.prepare_content_display(item, self.content_view)

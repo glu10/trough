@@ -22,6 +22,7 @@ import re
 from ruleResolver import RuleResolver
 from inspect import signature
 
+
 class WrappedScrapeResolver(RuleResolver):
     """ Hides the differences between default and custom rule behavior """
 
@@ -34,7 +35,7 @@ class WrappedScrapeResolver(RuleResolver):
 
     @staticmethod
     def _check_standards(rule_module, rule_file_string):
-        return False
+        pass  # Should not be called because it doesn't make sense for a wrapper.
 
     def select_rule(self, link, job):
         result = None
@@ -118,7 +119,7 @@ class DefaultScrapeResolver(RuleResolver):
             p = re.sub(r'\s+', ' ', p)
             p = re.sub(r'\n\n(\n+)', '\n\n', p)
 
-            p = re.sub(r'<.*?>', '', p) # Remove any leftovers from HTML
+            p = re.sub(r'<.*?>', '', p)  # Remove any leftovers from HTML
 
             # Remove small annoyances
             temp = p.lower()
@@ -133,5 +134,5 @@ class CustomScrapeResolver(DefaultScrapeResolver):
     """ Behaves like the default rule resolver, except it just gives up when no match occurs. """
 
     @staticmethod
-    def fallback_rule(soup):
+    def _fallback_rule(soup):
         return None

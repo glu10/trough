@@ -1,12 +1,10 @@
 import unittest
 from unittest import mock
-from unittest.mock import call, patch
+from unittest.mock import Mock, call, patch
 
 import gi
 gi.require_version('Gtk', '3.0')  # Silences warning
 from cache import Cache
-import builtins
-import utilityFunctions
 import os
 
 
@@ -31,13 +29,13 @@ class TestCache(unittest.TestCase):
     def test_query(self):
         self.assertIsNone(self.cache.query('Never inserted'))
 
-    @patch('utilityFunctions.ensure_directory_exists', mock.Mock())
+    @patch('utilityFunctions.ensure_directory_exists', Mock())
     @patch('builtins.open', mock.mock_open(read_data='{\"identifier\":\"value\"}'))
     def test_load_cache(self):
             self.cache.load_cache()
             self.assertEquals(self.cache.query('identifier'), 'value')
 
-    @patch('utilityFunctions.ensure_directory_exists', mock.Mock())
+    @patch('utilityFunctions.ensure_directory_exists', Mock())
     def test_write_cache(self):
         self.cache.put('identifier', 'value')
 

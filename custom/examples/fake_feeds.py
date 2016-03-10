@@ -30,7 +30,13 @@ here: http://www.crummy.com/software/BeautifulSoup/bs4/doc/
 
 Have fun! In this file I try to create useful rules that display various levels of complexity.
 """
-from ..item import Item
+
+# Import logic for both locations this file could be in. In reality the custom folder should be the only location
+# this code is ever executed from, but having a missing import in an example seems like poor form.
+try:  # custom folder imports
+    from ..item import Item
+except ImportError:  # examples folder imports
+    from ...item import Item
 
 
 def hrefs_to_items(feed_name, href_list):
