@@ -200,30 +200,3 @@ class TestThreePaneView(unittest.TestCase):
 
     def test_text_containing_widgets(self):
         self.assertEqual(3, len(self.view.text_containing_widgets()))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
