@@ -80,6 +80,8 @@ class AddFeed(Gtk.Dialog):
         if checked:
             self.uri_entry.set_text('')
             self.uri_label.set_text(self.uri_label.get_text())  # Disables markup (workaround)
+        elif self.error_label.is_visible():  # Prevents losing the 'missing' status of the URI after unchecking.
+            self.switch_red_on_entry_label('', self.uri_label)
 
         self.uri_label.set_sensitive(not checked)
         self.uri_entry.set_sensitive(not checked)
