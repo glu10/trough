@@ -67,6 +67,7 @@ class PreferencesCategory(metaclass=ABCMeta):
         label.set_padding(5, 0)  # Pad from the left side
         return label
 
+
 class AppearancePreferences(PreferencesCategory):
     """
     Views (Two-Pane/Three-Pane)
@@ -85,7 +86,6 @@ class AppearancePreferences(PreferencesCategory):
 
         self.color_idents = ['Font Color', 'Background Color', 'Selection Font Color', 'Selection Background Color']
         self.color_buttons = []
-
 
     def create_display_area(self):
         grid = Gtk.Grid(row_spacing=3, column_spacing=7, orientation=Gtk.Orientation.VERTICAL)
@@ -178,8 +178,6 @@ class AppearancePreferences(PreferencesCategory):
                 cb.set_rgba(utilityFunctions.string_to_RGBA(self.choices[ci]))
 
 
-
-
 class FeedsPreferences(PreferencesCategory):
     """
     Displays feeds and allows for editing of the list and feed information.
@@ -231,7 +229,8 @@ class FeedsPreferences(PreferencesCategory):
             self.attempt_selection(self.view.get_selection(), 0)
         return grid
 
-    def info_placeholder(self):
+    @staticmethod
+    def info_placeholder():
         """
         The GUI component that will be populated with feed information when a feed is selected.
         """
@@ -319,6 +318,7 @@ class FeedsPreferences(PreferencesCategory):
             uri = model[iter][1]
 
             dialog = AddFeed(self.parent, feed=Feed(name, uri))
+            dialog.set_title('Edit Feed')
             response = dialog.get_response(self.feed_list)
             if response:
                 model[iter][0] = response.name
@@ -326,7 +326,8 @@ class FeedsPreferences(PreferencesCategory):
                 self.feed_selected(selection)
             return None
 
-    def attempt_selection(self, selector, iter):
+    @staticmethod
+    def attempt_selection(selector, iter):
         if iter is not None:
             try:
                 if type(iter) == int:
