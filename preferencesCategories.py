@@ -84,7 +84,9 @@ class AppearancePreferences(PreferencesCategory):
         self.font_idents = ['Category Font', 'Headline Font', 'Story Font']
         self.font_buttons = []
 
-        self.color_idents = ['Font Color', 'Background Color', 'Selection Font Color', 'Selection Background Color']
+        self.color_idents = ['Font Color', 'Background Color', 'Selection Font Color', 'Selection Background Color',
+                             'Read Color', 'Filtered Color']
+
         self.color_buttons = []
 
     def create_display_area(self):
@@ -111,7 +113,7 @@ class AppearancePreferences(PreferencesCategory):
         for c in self.color_idents:
             label = self.descriptor_label(c)
             grid.add(label)
-            cb = self.color_button(c, c == 'Selection Background Color')
+            cb = self.color_button(c)
             grid.attach_next_to(cb, label, Gtk.PositionType.RIGHT, 1, 1)
             self.color_buttons.append(cb)
 
@@ -147,11 +149,11 @@ class AppearancePreferences(PreferencesCategory):
     def view_switched(self, combo):
         self.choices['View'] = combo.get_active_text()
 
-    def color_button(self, name, use_alpha):
+    def color_button(self, name):
         rgba = Gdk.RGBA()
         rgba.parse(self.choices[name])
         cb = Gtk.ColorButton.new_with_rgba(rgba)
-        cb.set_use_alpha(use_alpha)
+        cb.set_use_alpha(True)
         cb.connect('color-set', self.color_switched, name)
         return cb
 
@@ -192,8 +194,6 @@ class FeedsPreferences(PreferencesCategory):
         self.view = Gtk.TreeView(model=self.feed_list)
 
     def create_display_area(self):
-        grid = Gtk.Grid(column_homogeneous=True, row_homogeneous=True)
-
         remove_button = utilityFunctions.make_button(theme_icon_string="remove", tooltip_text="Remove selected feed",
                                                      signal="clicked", function=self.remove_selection)
 
@@ -203,31 +203,46 @@ class FeedsPreferences(PreferencesCategory):
         edit_button = utilityFunctions.make_button(theme_icon_string="gtk-edit", tooltip_text="Edit selected feed",
                                                    signal="clicked", function=self.edit_feed)
 
-        grid.attach(remove_button, 0, 0, 1, 1)
-        grid.attach(add_button,    1, 0, 1, 1)
-        grid.attach(edit_button,   2, 0, 1, 1)
+        button_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        button_hbox.pack_start(remove_button, False, False, 0)
+        button_hbox.pack_start(add_button, False, False, 0)
+        button_hbox.pack_start(edit_button, False, False, 0)
 
         # List of Feeds
         for feed in self.choices.values():
             self.feed_list.append([feed.name, feed.uri])
 
-        column = Gtk.TreeViewColumn("Feeds", Gtk.CellRendererText(), text=0)
-        column.set_alignment(.5)
+        column = Gtk.TreeViewColumn('', Gtk.CellRendererText(), text=0)
         self.view.append_column(column)
+        self.view.set_headers_visible(False)
+        column_title = Gtk.Label()
+        column_title.set_markup('<b> Feeds </b>')
         select = self.view.get_selection()
         select.connect("changed", self.feed_selected)
         scroll = Gtk.ScrolledWindow()
         scroll.add(self.view)
-        scroll.set_size_request(50, 100)
-        frame = Gtk.Frame()
-        frame.add(scroll)
+        feed_frame = Gtk.Frame()
 
-        grid.attach(frame, 0, 1, 3, 10)
-        grid.attach(self.info_box, 3, 0, 3, 11)
+        feed_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        feed_vbox.pack_start(column_title, False, False, 5)
+        feed_vbox.pack_start(scroll, True, True, 0)
+        feed_frame.add(feed_vbox)
+
+        info_frame = Gtk.Frame()
+        info_frame.add(self.info_box)
+
+        feed_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        feed_hbox.pack_start(feed_frame, True, True, 0)
+        feed_hbox.pack_end(info_frame, True, True, 1)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        vbox.pack_start(button_hbox, False, False, 0)
+        vbox.pack_end(feed_hbox, True, True, 0)
 
         if len(self.feed_list) > 0:
             self.attempt_selection(self.view.get_selection(), 0)
-        return grid
+
+        return vbox
 
     @staticmethod
     def info_placeholder():
@@ -242,7 +257,6 @@ class FeedsPreferences(PreferencesCategory):
 
         sw = Gtk.ScrolledWindow()
         sw.set_policy(Gtk.PolicyType.ALWAYS, Gtk.PolicyType.ALWAYS)
-        sw.set_size_request(100, 100)
         vbox.pack_start(info_label, False, False, 5)
         vbox.pack_start(sw, True, True, 0)
         return vbox, sw
@@ -251,25 +265,28 @@ class FeedsPreferences(PreferencesCategory):
         """
         Display the information related to a feed.
         """
-        # Information Grid
-        grid = Gtk.Grid(row_spacing=3, orientation=Gtk.Orientation.VERTICAL, column_homogeneous=True)
-
-        # Feed name
         name_desc = self.bold_label('Name', left=True)
-        grid.add(name_desc)
         name_display = self.descriptor_label(feed_name)
         name_display.set_selectable(True)
-        grid.attach_next_to(name_display, name_desc, Gtk.PositionType.RIGHT, 4, 1)
 
-        # Feed URI
         uri_desc = self.bold_label('URI', left=True)
-        grid.add(uri_desc)
         uri = self.feed_list[iter][1]
         uri_display = self.descriptor_label(uri)
         uri_display.set_selectable(True)
-        grid.attach_next_to(uri_display, uri_desc, Gtk.PositionType.RIGHT, 4, 1)
 
-        return grid
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        value_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        label_vbox.add(name_desc)
+        value_vbox.add(name_display)
+
+        label_vbox.add(uri_desc)
+        value_vbox.add(uri_display)
+
+        hbox.pack_start(label_vbox, False, False, 3)
+        hbox.pack_start(value_vbox, True, True, 0)
+        return hbox
 
     def feed_selected(self, selection):
         model, iter = selection.get_selected()
@@ -354,39 +371,113 @@ class FeedsPreferences(PreferencesCategory):
 
 
 class FiltrationPreferences(PreferencesCategory):
-    def __init__(self, preferences):
+    def __init__(self, parent, preferences):
         super().__init__(preferences, 'Filtration')
+        self.parent = parent
+        self.filter_list = Gtk.ListStore(str)
+        self.view = Gtk.TreeView(model=self.filter_list)
 
     def create_display_area(self):
-        return self.bold_label("Not implemented yet.")
+        column = Gtk.TreeViewColumn('', Gtk.CellRendererText(), text=0)
+        column.set_alignment(.5)
+        self.view.append_column(column)
+        self.view.set_headers_visible(False)
+
+        view_title = Gtk.Label()
+        view_title.set_markup('<b>Filter Triggers</b>')
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+
+        remove_button = utilityFunctions.make_button(theme_icon_string="remove", tooltip_text="Remove selected filter",
+                                                     signal="clicked", function=self.remove_filter)
+        add_button = utilityFunctions.make_button(theme_icon_string="add", tooltip_text="Add a filter",
+                                                  signal="clicked", function=self.add_filter)
+        edit_button = utilityFunctions.make_button(theme_icon_string="gtk-edit", tooltip_text="Edit selected filter",
+                                                   signal="clicked", function=self.edit_filter)
+        hbox.add(remove_button)
+        hbox.add(add_button)
+        hbox.add(edit_button)
+
+        scroll = Gtk.ScrolledWindow()
+        scroll.add(self.view)
+        scroll_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        scroll_vbox.pack_start(view_title, False, False, 5)
+        scroll_vbox.pack_start(scroll, True, True, 0)
+        frame = Gtk.Frame()
+        frame.add(scroll_vbox)
+
+        vbox.pack_start(hbox, False, False, 0)
+        vbox.pack_end(frame, True, True, 0)
+        return vbox
+
+    def add_filter(self, button):
+        fd = FilterDialog('Add a filter', self.parent, self.filter_list)
+        r = fd.get_response()
+        if r:
+            self.filter_list.append([r])
+
+    def edit_filter(self, button):
+        selection = self.view.get_selection()
+        model, iter = selection.get_selected()
+        if iter:
+            fd = FilterDialog('Edit filter', self.parent, self.filter_list)
+            r = fd.get_response(model[iter][0])
+            if r:
+                self.filter_list.append([r])
+
+    def remove_filter(self, button):
+        selection = self.view.get_selection()
+        model, iter = selection.get_selected()
+        if iter:
+            model.remove(iter)
 
 
-class ScrapingPreferences(PreferencesCategory):
+class FilterDialog(Gtk.Dialog):
+    def __init__(self, title, parent, list):
+        Gtk.Dialog.__init__(self, title, parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                                                     Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        box = self.get_content_area()
+        hbox = Gtk.Box(Gtk.Orientation.HORIZONTAL)
 
-    def __init__(self, preferences):
-        super().__init__(preferences, 'Scraping')
+        self.filter_list = list
+        self.label = Gtk.Label('Filter trigger  ', xalign=0)
+        hbox.add(self.label)
+        self.entry = Gtk.Entry(hexpand=True)
+        hbox.add(self.entry)
+        box.pack_start(hbox, True, True, 10)
+        box.show_all()
 
-        self.rule_priority_check = Gtk.CheckButton('Check custom rules before defaults')
-        self.rule_priority_check.connect('toggled', self.on_rule_priority_toggled)
+        ok_button = self.get_widget_for_response(response_id=Gtk.ResponseType.OK)
+        ok_button.set_can_default(True)
+        ok_button.grab_default()
+        self.entry.set_activates_default(True)
 
-    def create_display_area(self):
-        #TODO: Not used yet.
-        """
-        grid = Gtk.Grid(row_spacing=2, orientation=Gtk.Orientation.VERTICAL, column_homogeneous=True)
+    def get_response(self, current=None):
+        if current:
+            self.entry.set_text(current)
 
-        # Custom Scraping rules
-        grid.add(self.bold_label('Custom Rules'))
-        grid.add(self.rule_priority_check)
+        return_val = None
+        while True:
+            response = self.run()
+            text = self.entry.get_text()
+            if response == Gtk.ResponseType.OK:
+                if text == current:
+                    break  # No change occurred, so nothing needs to be done.
+                elif self.is_unique(text):
+                    return_val = text
+                    break
+                else:
+                    utilityFunctions.warning_popup(self, 'Error', 'The trigger ' + text + ' already exists.')
 
-        if self.choices['Scraping Rule Priority'] == 'Custom':
-            self.rule_priority_check.set_active(True)
+            elif response == Gtk.ResponseType.CANCEL or response == Gtk.ResponseType.NONE:
+                break
 
-        return grid
-        """
-        return self.bold_label('Not implemented yet.')
+        self.destroy()
+        return return_val
 
-    def on_rule_priority_toggled(self, button):
-        if button.get_active():
-            self.choices['Scraping Rule Priority'] = 'Custom'
-        else:
-            self.choices['Scraping Rule Priority'] = 'Default'
+    def is_unique(self, word):
+        for row in self.filter_list:
+            if row[0] == word:
+                return False
+        return True

@@ -34,8 +34,7 @@ class PreferencesWindow(Gtk.Dialog):
         self.preferences_categories = [
                                        AppearancePreferences(self, self.preferences),
                                        FeedsPreferences(self, self.preferences),
-                                       FiltrationPreferences(self.preferences),
-                                       ScrapingPreferences(self.preferences),
+                                       FiltrationPreferences(self, self.preferences),
                                       ]
 
         self.notebook = Gtk.Notebook()

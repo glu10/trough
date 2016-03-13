@@ -27,12 +27,16 @@ class AddFeed(Gtk.Dialog):
     def __init__(self, parent, feed=None):
         Gtk.Dialog.__init__(self, 'Add Feed', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                                           Gtk.STOCK_OK, Gtk.ResponseType.OK))
-        self.set_default_size(150, 100)
         self.feed = feed
         self.missing_information = False  # Used for error display logic.
+        self.set_default_size(150, 100)
+
+        # Make the ok button the default button so it can be triggered by the enter key.
+        ok_button = self.get_widget_for_response(response_id=Gtk.ResponseType.OK)
+        ok_button.set_can_default(True)
+        ok_button.grab_default()
 
         grid = Gtk.Grid(column_spacing=3, row_spacing=3, orientation=Gtk.Orientation.VERTICAL)
-
         self.name_label, self.name_entry = self.add_labeled_entry('Name of Feed', grid)
         self.fake_feed_check_button = self.add_labeled_check_button('Fake Feed', '(leave unchecked if unsure)',
                                                                     self.on_fake_feed_toggled, grid)
@@ -40,6 +44,10 @@ class AddFeed(Gtk.Dialog):
         self.error_label = Gtk.Label()
         self.error_label.set_markup('<span color="red">Fill in the missing information.</span>')
         grid.attach(self.error_label, 1, 4, 4, 1)
+
+        # When an enter key is pressed on an entry, activate the okay button.
+        self.name_entry.set_activates_default(True)
+        self.uri_entry.set_activates_default(True)
 
         if self.feed:  # If a feed was passed in
             self.fill_in_feed_information(self.feed)

@@ -24,6 +24,7 @@ from feed import Feed
 import copy
 from utilityFunctions import load_file, write_file
 
+
 class Preferences:
     """ Deals with configuration data that survives between sessions
         Examples are appearance settings, added feeds, filters, etc. """
@@ -42,7 +43,6 @@ class Preferences:
         preferences['Appearance'] = Preferences.default_appearance_preferences()
         preferences['Feeds'] = Preferences.default_feeds_preferences()
         preferences['Filtration'] = Preferences.default_filtration_preferences()
-        preferences['Scraping'] = Preferences.default_scraping_preferences()
         return preferences
 
     @staticmethod
@@ -59,10 +59,13 @@ class Preferences:
         p['Headline Font'] = default_font
         p['Story Font'] = document_font
 
-        p['Font Color'] = 'rgba(0, 0, 0, 1.0)'  # RGBA for solid black.
-        p['Background Color'] = 'rgba(255, 255, 255, 1.0)'  # RGBA for solid white
-        p['Selection Font Color'] = 'rgba(255, 255, 255, 1.0)'  # RGBA for solid white
-        p['Selection Background Color'] = 'rgba(81, 126, 173, 1.0)'  # RGBA for medium-dark blue
+        p['Font Color'] = 'rgba(0, 0, 0, 1.0)'  # solid black.
+        p['Background Color'] = 'rgba(255, 255, 255, 1.0)'  # solid white
+        p['Selection Font Color'] = 'rgba(255, 255, 255, 1.0)'  # solid white
+        p['Selection Background Color'] = 'rgba(81, 126, 173, 1.0)'  # medium-dark blue
+        p['Read Color'] = 'rgba(128, 128, 128, .7)'  # slightly transparent gray
+        p['Filtered Color'] = 'rgba(128, 128, 128, .5)'  # slightly more transparent gray
+
         return p
 
     @staticmethod
@@ -76,14 +79,7 @@ class Preferences:
         p['Filtered Titles'] = list()
         p['Filtered Content'] = list()
         p['HideOrHighlight'] = "Highlight"
-        p['FilteredHighlight'] = 'rgba(128, 128, 128, .5)'  # RGBA values (for a slightly translucent gray)
-        return p
-
-    @staticmethod
-    def default_scraping_preferences():  # TODO: Support for auto-refresh on a feed-by-feed basis would be nice
-        p = dict()
-        p['Scraping Rule Priority'] = "Default"
-
+        p['FilteredHighlight'] = 'rgba(128, 128, 128, .5)'  #
         return p
 
     def appearance_preferences(self):
@@ -94,9 +90,6 @@ class Preferences:
 
     def filtration_preferences(self):
         return self.preferences['Filtration']
-
-    def scraping_preferences(self):
-        return self.preferences['Scraping']
 
     def load_preferences(self):
         self.preferences = load_file(self.preferences_directory, self.preferences_file, self.preferences)
