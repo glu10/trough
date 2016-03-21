@@ -45,7 +45,6 @@ class Gatherer:
         self.request_queue = Queue()  # Can contain Feed Requests and Item (scraping) requests
         self.fulfilled_feed_queue = Queue()
         self.fulfilled_scrape_queue = Queue()
-
         self.threads = self.create_and_start_threads(2)
 
     def create_and_start_threads(self, num_threads):
@@ -185,8 +184,7 @@ class GathererWorkerThread(Thread):
     def gather_fake_feed(self, feed):
         feed.items = self.fake_feed_resolver.select_rule(feed.name, self._fresh_scrape_job())
 
-    @staticmethod
-    def gather_feed(feed):
+    def gather_feed(self, feed):
         """ Given a feed, retrieves the items of the feed """
         content = utilityFunctions.feedparser_parse(feed.uri)
         items = list()
@@ -205,6 +203,9 @@ class GathererWorkerThread(Thread):
                           ' has no title, description, or link. Skipped.' + str(entry))
                 else:
                     item = Item(feed.name, title, Gatherer.description_cleanup(description), link)
+                    hit = self.cache.query(item.link)
+                    if hit:
+                        item.article = hit
                     items.append(item)
 
         feed.items = items

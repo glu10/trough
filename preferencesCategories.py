@@ -20,10 +20,11 @@
 
 from abc import ABCMeta, abstractmethod
 from gi.repository import Gtk, Gdk, Gio
-from addFeed import AddFeed
+from feedDialog import FeedDialog
 import utilityFunctions
 from preferences import Preferences
 from feed import Feed
+from filter import Filter
 
 
 class PreferencesCategory(metaclass=ABCMeta):
@@ -315,7 +316,7 @@ class FeedsPreferences(PreferencesCategory):
         """
         Note: This only adds the feed to the temporary feed list in the preferences window.
         """
-        dialog = AddFeed(self.parent)
+        dialog = FeedDialog(self.parent)
         response = dialog.get_response(self.feed_list)
         if response:
             if response.overwrite:  # Are we replacing a different feed with this one because conflicting name/URI?
@@ -334,7 +335,7 @@ class FeedsPreferences(PreferencesCategory):
             name = model[iter][0]
             uri = model[iter][1]
 
-            dialog = AddFeed(self.parent, feed=Feed(name, uri))
+            dialog = FeedDialog(self.parent, feed=Feed(name, uri))
             dialog.set_title('Edit Feed')
             response = dialog.get_response(self.feed_list)
             if response:
@@ -374,17 +375,22 @@ class FiltrationPreferences(PreferencesCategory):
     def __init__(self, parent, preferences):
         super().__init__(preferences, 'Filtration')
         self.parent = parent
-        self.filter_list = Gtk.ListStore(str)
+        self.filter_list = Gtk.ListStore(str, bool)
         self.view = Gtk.TreeView(model=self.filter_list)
 
     def create_display_area(self):
-        column = Gtk.TreeViewColumn('', Gtk.CellRendererText(), text=0)
-        column.set_alignment(.5)
-        self.view.append_column(column)
-        self.view.set_headers_visible(False)
+        filter_column = Gtk.TreeViewColumn('Trigger', Gtk.CellRendererText(), text=0)
+        filter_column.set_alignment(.5)
+        self.view.append_column(filter_column)
+
+        capitalization_column = Gtk.TreeViewColumn('Case sensitive', Gtk.CellRendererText(), text=1)
+        self.view.append_column(capitalization_column)
+
+        for f in self.choices:
+            self.filter_list.append([f.trigger, f.case_sensitive])
 
         view_title = Gtk.Label()
-        view_title.set_markup('<b>Filter Triggers</b>')
+        view_title.set_markup('<b>Filters</b>')
 
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -415,16 +421,16 @@ class FiltrationPreferences(PreferencesCategory):
         fd = FilterDialog('Add a filter', self.parent, self.filter_list)
         r = fd.get_response()
         if r:
-            self.filter_list.append([r])
+            self.filter_list.append(r)
 
     def edit_filter(self, button):
         selection = self.view.get_selection()
         model, iter = selection.get_selected()
         if iter:
             fd = FilterDialog('Edit filter', self.parent, self.filter_list)
-            r = fd.get_response(model[iter][0])
+            r = fd.get_response(model[iter])
             if r:
-                self.filter_list.append([r])
+                model[iter] = r
 
     def remove_filter(self, button):
         selection = self.view.get_selection()
@@ -432,49 +438,76 @@ class FiltrationPreferences(PreferencesCategory):
         if iter:
             model.remove(iter)
 
+    def gather_choices(self):
+        return [Filter(row[0], row[1]) for row in self.filter_list]
 
+
+# TODO: FilterDialog shares a lot of functionality with FeedDialog. Prevent duplication by making a common parent class?
 class FilterDialog(Gtk.Dialog):
-    def __init__(self, title, parent, list):
+    def __init__(self, title, parent, filter_list):
         Gtk.Dialog.__init__(self, title, parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                                      Gtk.STOCK_OK, Gtk.ResponseType.OK))
-        box = self.get_content_area()
-        hbox = Gtk.Box(Gtk.Orientation.HORIZONTAL)
 
-        self.filter_list = list
-        self.label = Gtk.Label('Filter trigger  ', xalign=0)
-        hbox.add(self.label)
+        self.filter_list = filter_list  # used for checking uniqueness
+        self.label = Gtk.Label('Filter  ', xalign=0)
         self.entry = Gtk.Entry(hexpand=True)
-        hbox.add(self.entry)
-        box.pack_start(hbox, True, True, 10)
-        box.show_all()
+        self.check = Gtk.CheckButton(label='Capitalization matters')
+        self.error_label = Gtk.Label()
+        self.error_label.set_markup('<span color="red">Fill in the missing information.</span>')
 
+        # Make the ok button the default button so it can be triggered by the enter key.
         ok_button = self.get_widget_for_response(response_id=Gtk.ResponseType.OK)
         ok_button.set_can_default(True)
         ok_button.grab_default()
         self.entry.set_activates_default(True)
 
-    def get_response(self, current=None):
-        if current:
-            self.entry.set_text(current)
+        box = self.get_content_area()
+        hbox = Gtk.Box(Gtk.Orientation.HORIZONTAL)
+        hbox.add(self.label)
+        hbox.add(self.entry)
+        box.pack_start(hbox, True, True, 10)
+        box.add(self.check)
+        box.add(self.error_label)
+        box.show_all()
+        self.error_label.set_visible(False)
+
+    def get_response(self, previous=None):
+        previous_text = None
+        if previous:
+            previous_text = previous[0]
+            previous_capitalization = previous[1]
+            self.entry.set_text(previous_text)
+            self.check.set_active(previous_capitalization)
 
         return_val = None
         while True:
             response = self.run()
-            text = self.entry.get_text()
+            text = self.entry.get_text().strip()
             if response == Gtk.ResponseType.OK:
-                if text == current:
+                if text == '':
+                    self.toggle_error(True)
+                elif text == previous_text:
                     break  # No change occurred, so nothing needs to be done.
-                elif self.is_unique(text):
-                    return_val = text
+                elif previous or self.is_unique(text):
+                    return_val = [text, self.check.get_active()]
                     break
                 else:
                     utilityFunctions.warning_popup(self, 'Error', 'The trigger ' + text + ' already exists.')
+                    self.toggle_error(False)
 
             elif response == Gtk.ResponseType.CANCEL or response == Gtk.ResponseType.NONE:
                 break
 
         self.destroy()
         return return_val
+
+    def toggle_error(self, show):
+        if show:
+            self.label.set_markup('<span color="red">Filter  </span>')
+            self.error_label.set_visible(True)
+        else:
+            self.label.set_markup('Filter  ')
+            self.error_label.set_visible(False)
 
     def is_unique(self, word):
         for row in self.filter_list:

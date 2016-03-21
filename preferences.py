@@ -74,12 +74,7 @@ class Preferences:
 
     @staticmethod
     def default_filtration_preferences():
-        p = dict()
-        p['Filtered Links'] = list()
-        p['Filtered Titles'] = list()
-        p['Filtered Content'] = list()
-        p['HideOrHighlight'] = "Highlight"
-        p['FilteredHighlight'] = 'rgba(128, 128, 128, .5)'  #
+        p = list()
         return p
 
     def appearance_preferences(self):
@@ -105,6 +100,9 @@ class Preferences:
 
     def feeds(self):
         return self.preferences['Feeds']
+
+    def filters(self):
+        return self.preferences['Filtration']
 
     def feed_list(self):
         return self.feeds().values()
@@ -135,4 +133,8 @@ class Preferences:
         temp['Feeds'] = dict()
         for feed in preferences['Feeds'].values():
             temp['Feeds'][feed.name] = feed.to_dict()
+
+        temp['Filters'] = list()
+        for f in preferences['Filters']:
+            temp['Filters'].append([f.trigger, f.case_sensitive])
         return temp

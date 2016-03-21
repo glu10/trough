@@ -15,7 +15,7 @@
 """
 
 from gi.repository import Gtk, Gio, Gdk, GLib, GObject
-from addFeed import AddFeed
+from feedDialog import FeedDialog
 from preferences import Preferences
 from twoPaneView import TwoPaneView
 from threePaneView import ThreePaneView
@@ -117,7 +117,7 @@ class MainWindow(Gtk.Window):
         return refresh_button
 
     def on_add_clicked(self, widget=None):
-        dialog = AddFeed(self)
+        dialog = FeedDialog(self)
         response = dialog.get_response(self.preferences.feeds())
 
         if response:
@@ -155,9 +155,15 @@ class MainWindow(Gtk.Window):
         while True:
             feed = self.gatherer.grab_feed_result()
             if feed and feed.items:
+                self.filter_feed(feed)
+                feed.items.sort()
                 self.current_view.receive_feed(feed)
             else:
                 break
+
+    def filter_feed(self, feed):
+        for fil in self.preferences.filters():
+            fil.inspect_feed(feed)
 
     # TODO: Idea: have a hotkey to add links to a buffer then you can open them all at once.
     def on_key_press(self, widget, event):

@@ -22,8 +22,8 @@ from gi.repository import Gtk
 import utilityFunctions
 
 
-class AddFeed(Gtk.Dialog):
-    """ A Dialog for adding a new RSS feed. """
+class FeedDialog(Gtk.Dialog):
+    """ A Dialog for adding or editing information related to an RSS feed. """
     def __init__(self, parent, feed=None):
         Gtk.Dialog.__init__(self, 'Add Feed', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                                           Gtk.STOCK_OK, Gtk.ResponseType.OK))
@@ -132,11 +132,11 @@ class AddFeed(Gtk.Dialog):
             no_warnings = name_warning == '' and uri_warning == ''
 
             if no_warnings:
-                return AddFeedResponse(name, uri, False)
+                return FeedDialogResponse(name, uri, False)
 
             warning_string = '\n'.join(filter(None, [name_warning, uri_warning, '\nAdd feed anyway?']))
             if utilityFunctions.decision_popup(self, 'Warning!', warning_string):
-                return AddFeedResponse(name, uri, name_already_existed)  # Despite warnings, user chose to add the feed.
+                return FeedDialogResponse(name, uri, name_already_existed)  # Despite warnings, user chose to add the feed.
             else:
                 return None  # User chose not to add the feed.
 
@@ -183,7 +183,7 @@ class AddFeed(Gtk.Dialog):
 
 
 # TODO Now that a feed class exists this isn't necessary, make a Feed object and return it.
-class AddFeedResponse:
+class FeedDialogResponse:
     """ Organizes the response information in an easy format """
     def __init__(self, name, uri, overwrite):
         self.name = name

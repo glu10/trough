@@ -20,9 +20,9 @@ A GTK+ RSS news reader (currently in the early stages of development)
 * Per-feed time-based caching strategies (never/minutes/hours/days)
 
 ## Avoiding
+* Being cross-platform (simplifies testing). 
 * Bookmark management (browsers can do that).
 * Podcast/Torrent/any other non-text integration (feature creep).
-* Being cross-platform (simplifies testing).
 * Third-party service integration (feature creep/privacy concerns).
 
 ## FAQ

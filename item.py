@@ -19,6 +19,7 @@
 """
 from threading import Lock
 
+
 class Item:
     """ An RSS item """
     def __init__(self, label, title='', description='', link=''):
@@ -26,6 +27,7 @@ class Item:
         self.title = title
         self.description = description
         self.link = link
+        self.filtered = False
         self.article = None  # from scraping
         self.lock = Lock()  # prevents an item from accidentally being scraped by multiple threads at once
 
@@ -39,6 +41,23 @@ class Item:
             link = ''
 
         return cls(label, title=href.text, link=link)
+
+    def ranking(self):
+        """ Used for item ordering. Priority: Unread -> Unread but Filtered -> Read """
+        if self.article:
+            return 3
+        elif self.filtered:
+            return 2
+        else:
+            return 1
+
+    def __lt__(self, other):
+        return self.ranking() < other.ranking()
+
+    def __eq__(self, other):
+        return self.ranking() == other.ranking()
+
+
 
 
 
