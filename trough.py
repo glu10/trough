@@ -40,7 +40,7 @@ class Trough(Gtk.Application):
         self.cache = Cache(load_from_file=True)
 
     def do_activate(self, *args):
-        if not self.main_window:
+        if not self.main_window and self.preferences and self.cache:
             self.main_window = MainWindow(self.preferences, self.cache, application=self, title='Trough')
             self.main_window.connect('delete_event', self.on_quit)
             self.add_window(self.main_window)

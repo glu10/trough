@@ -162,8 +162,8 @@ class AppearancePreferences(PreferencesCategory):
         self.choices[name] = cc.get_rgba().to_string()
 
     def confirm_and_reset_defaults(self, widget):
-        if utilityFunctions.decision_popup(self.parent, 'Reset Appearance to Defaults',
-                          'Are you sure you want to reset your Appearance preferences to default values?'):
+        if utilityFunctions.decision_popup(self.parent, 'Reset appearance to defaults?',
+                          'Are you sure you want to reset your appearance preferences to default values?'):
             self.choices = Preferences.default_appearance_preferences()
 
             # Visual Effects
@@ -187,12 +187,13 @@ class FeedsPreferences(PreferencesCategory):
     I'm going to have feed information be edited through a new dialog (although that is kind of annoying)
     because it simplifies how to catch/verify changes.
     """
-    def __init__(self, parent, preferences):
+    def __init__(self, parent, preferences, cache):
         super().__init__(preferences, 'Feeds')
         self.parent = parent
         self.info_box, self.info_scroll = self.info_placeholder()
         self.feed_list = Gtk.ListStore(str, str)
         self.view = Gtk.TreeView(model=self.feed_list)
+        self.cache = cache # only used for being cleared
 
     def create_display_area(self):
         remove_button = utilityFunctions.make_button(theme_icon_string="remove", tooltip_text="Remove selected feed",
@@ -204,10 +205,16 @@ class FeedsPreferences(PreferencesCategory):
         edit_button = utilityFunctions.make_button(theme_icon_string="gtk-edit", tooltip_text="Edit selected feed",
                                                    signal="clicked", function=self.edit_feed)
 
+        clear_cache_button = utilityFunctions.make_button(tooltip_text='Clears all scraped articles and ' +
+                                                                       'read history information',
+                                                          signal='clicked', function=self.clear_cache)
+        clear_cache_button.set_label('Clear cache')
+
         button_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         button_hbox.pack_start(remove_button, False, False, 0)
         button_hbox.pack_start(add_button, False, False, 0)
         button_hbox.pack_start(edit_button, False, False, 0)
+        button_hbox.pack_end(clear_cache_button, False, False, 0)
 
         # List of Feeds
         for feed in self.choices.values():
@@ -236,7 +243,11 @@ class FeedsPreferences(PreferencesCategory):
         feed_hbox.pack_start(feed_frame, True, True, 0)
         feed_hbox.pack_end(info_frame, True, True, 1)
 
+        helpful_label = Gtk.Label('Changes appear on the next refresh.')
+        helpful_label.set_line_wrap(True)
+
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        vbox.pack_start(helpful_label, False, False, 5)
         vbox.pack_start(button_hbox, False, False, 0)
         vbox.pack_end(feed_hbox, True, True, 0)
 
@@ -370,24 +381,35 @@ class FeedsPreferences(PreferencesCategory):
                     temp[feed_name].items = self.choices[feed_name].items
         return temp
 
+    def clear_cache(self, button):
+        first = 'Clear the cache?'
+        second = ('All previously scraped articles will be lost when you refresh or exit, '
+                  'as well as any information regarding what articles you have read.')
+
+        if utilityFunctions.decision_popup(self.parent, first, second):
+            self.cache.clear()
+
 
 class FiltrationPreferences(PreferencesCategory):
     def __init__(self, parent, preferences):
         super().__init__(preferences, 'Filters')
         self.parent = parent
-        self.filter_list = Gtk.ListStore(str, bool)
+        self.filter_list = Gtk.ListStore(str, bool, bool)
         self.view = Gtk.TreeView(model=self.filter_list)
 
     def create_display_area(self):
         filter_column = Gtk.TreeViewColumn('Filter', Gtk.CellRendererText(), text=0)
         filter_column.set_alignment(.5)
+        filter_column.set_expand(True)
         self.view.append_column(filter_column)
 
-        capitalization_column = Gtk.TreeViewColumn('Case sensitive', Gtk.CellRendererText(), text=1)
-        self.view.append_column(capitalization_column)
+        caps_column = Gtk.TreeViewColumn('Case sensitive', Gtk.CellRendererText(), text=1)
+        hide_matches_column = Gtk.TreeViewColumn('Hide matches', Gtk.CellRendererText(), text=2)
+        self.view.append_column(caps_column)
+        self.view.append_column(hide_matches_column)
 
         for f in self.choices:
-            self.filter_list.append([f.filter, f.case_sensitive])
+            self.filter_list.append([f.filter, f.case_sensitive, f.hide_matches])
 
         view_title = Gtk.Label()
         view_title.set_markup('<b>Filters</b>')
@@ -413,7 +435,10 @@ class FiltrationPreferences(PreferencesCategory):
         frame = Gtk.Frame()
         frame.add(scroll_vbox)
 
-        vbox.pack_start(hbox, False, False, 0)
+        helpful_label = Gtk.Label('Changes appear on the next refresh.')
+        helpful_label.set_line_wrap(True)
+        vbox.pack_start(helpful_label, False, False, 5)
+        vbox.add(hbox)
         vbox.pack_end(frame, True, True, 0)
         return vbox
 
@@ -439,21 +464,21 @@ class FiltrationPreferences(PreferencesCategory):
             model.remove(iter)
 
     def gather_choices(self):
-        return [Filter(row[0], row[1]) for row in self.filter_list]
+        return [Filter(row[0], row[1], row[2]) for row in self.filter_list]
 
 
-# TODO: FilterDialog shares a lot of functionality with FeedDialog. Prevent duplication by making a common parent class?
 class FilterDialog(Gtk.Dialog):
     def __init__(self, title, parent, filter_list):
         Gtk.Dialog.__init__(self, title, parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                                      Gtk.STOCK_OK, Gtk.ResponseType.OK))
 
+        self.set_size_request(150, 100)
         self.filter_list = filter_list  # used for checking uniqueness
-        self.label = Gtk.Label('Filter  ', xalign=0)
+        self.label = Gtk.Label('Filter', xalign=0)
         self.entry = Gtk.Entry(hexpand=True)
-        self.check = Gtk.CheckButton(label='Capitalization matters')
-        self.error_label = Gtk.Label()
-        self.error_label.set_markup('<span color="red">Fill in the missing information.</span>')
+        self.caps = Gtk.CheckButton(label='Case sensitive')
+        self.hide_matches = Gtk.CheckButton(label='Hide matches')
+        self.error_label = Gtk.Label(' ')
 
         # Make the ok button the default button so it can be triggered by the enter key.
         ok_button = self.get_widget_for_response(response_id=Gtk.ResponseType.OK)
@@ -463,21 +488,23 @@ class FilterDialog(Gtk.Dialog):
 
         box = self.get_content_area()
         hbox = Gtk.Box(Gtk.Orientation.HORIZONTAL)
-        hbox.add(self.label)
+        hbox.pack_start(self.label, False, False, 10)
         hbox.add(self.entry)
         box.pack_start(hbox, True, True, 10)
-        box.add(self.check)
+        box.add(self.caps)
+        box.add(self.hide_matches)
         box.add(self.error_label)
         box.show_all()
-        self.error_label.set_visible(False)
 
     def get_response(self, previous=None):
         previous_text = None
         if previous:
             previous_text = previous[0]
-            previous_capitalization = previous[1]
+            previous_caps = previous[1]
+            previous_hide_matches = previous[2]
             self.entry.set_text(previous_text)
-            self.check.set_active(previous_capitalization)
+            self.caps.set_active(previous_caps)
+            self.hide_matches.set_active(previous_hide_matches)
 
         return_val = None
         while True:
@@ -486,10 +513,8 @@ class FilterDialog(Gtk.Dialog):
             if response == Gtk.ResponseType.OK:
                 if text == '':
                     self.toggle_error(True)
-                elif text == previous_text:
-                    break  # No change occurred, so nothing needs to be done.
                 elif previous or self.is_unique(text):
-                    return_val = [text, self.check.get_active()]
+                    return_val = [text, self.caps.get_active(), self.hide_matches.get_active()]
                     break
                 else:
                     utilityFunctions.warning_popup(self, 'Error', 'The filter ' + text + ' already exists.')
@@ -503,11 +528,11 @@ class FilterDialog(Gtk.Dialog):
 
     def toggle_error(self, show):
         if show:
-            self.label.set_markup('<span color="red">Filter  </span>')
-            self.error_label.set_visible(True)
+            self.label.set_markup('<span color="red">Filter</span>')
+            self.error_label.set_markup('<span color="red">Fill in the missing information.</span>')
         else:
-            self.label.set_markup('Filter  ')
-            self.error_label.set_visible(False)
+            self.label.set_markup('Filter')
+            self.error_label.set_markup(' ')
 
     def is_unique(self, word):
         for row in self.filter_list:

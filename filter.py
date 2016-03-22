@@ -23,16 +23,27 @@ import re
 
 class Filter:
 
-    def __init__(self, filt, case_sensitive):
+    def __init__(self, filt, case_sensitive, hide_matches):
         self.filter = filt
         self.case_sensitive = case_sensitive
+        self.hide_matches = hide_matches
         if self.case_sensitive:
             self.searcher = re.compile(self.filter)
         else:
             self.searcher = re.compile(self.filter, re.IGNORECASE)
 
     def inspect_feed(self, feed):
+        matched_any = False  # Makes the common case of no matches faster
+
         for item in feed.items:
             if not item.filtered:
                 if self.searcher.search(item.title) or self.searcher.search(item.description):
                     item.filtered = True
+                    matched_any = True
+
+        if self.hide_matches and matched_any:
+            new_items = list()
+            for item in feed.items:
+                if not item.filtered:
+                    new_items.append(item)
+            feed.items = new_items

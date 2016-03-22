@@ -46,7 +46,8 @@ class MainWindow(Gtk.Window):
         self.css_provider = self.create_css()
         self.header_bar = self.create_header()
 
-        self.gatherer = Gatherer(self, self.preferences, cache)
+        self.cache = cache
+        self.gatherer = Gatherer(self, self.preferences, self.cache)
         self.current_view = None
         self.switch_view()
 
@@ -137,7 +138,7 @@ class MainWindow(Gtk.Window):
             self.on_refresh_clicked()  # Do a convenience refresh
 
     def on_preferences_clicked(self, widget=None):
-        pw = PreferencesWindow(self, self.preferences)
+        pw = PreferencesWindow(self, self.preferences, self.cache)
         response = pw.run()
         if response == Gtk.ResponseType.OK:
             pw.apply_choices()
@@ -168,7 +169,7 @@ class MainWindow(Gtk.Window):
             feed = self.gatherer.grab_feed_result()
             if feed and feed.items:
                 self.filter_feed(feed)
-                feed.items.sort()
+                feed.sort_items()
                 self.current_view.receive_feed(feed)
             else:
                 break

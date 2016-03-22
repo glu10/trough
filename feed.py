@@ -43,6 +43,20 @@ class Feed:
 
         return Feed(attribute_dict['name'], attribute_dict['uri'])
 
+    def sort_items(self):
+        """ Bucket sort with 3 buckets. """
+        if self.items:
+            buckets = [list(), list(), list()]
+            for item in self.items:
+                buckets[item.ranking()].append(item)
+
+            i = 0
+            for bucket in buckets:
+                for item in bucket:
+                    self.items[i] = item
+                    i += 1
+
+
     def to_dict(self):
         # Can't just use __dict__ because the items list is going to be excluded
         return {'name': self.name, 'uri': self.uri}

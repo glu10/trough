@@ -1,5 +1,4 @@
 ## High Priority
-* Add filter option for hiding matches completely.
 * Fake feeds rule examples and testing.
 * Write more unit tests
 

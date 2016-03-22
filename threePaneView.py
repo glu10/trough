@@ -20,6 +20,7 @@
 from gi.repository import Gtk, Gdk
 from twoPaneView import TwoPaneView
 
+
 class ThreePaneView(TwoPaneView):
     """ Pane 1: Feed names. Pane 2: Items of selected feed name. Pane 3: Contents of the selected item.
         Panes 2-3 are TwoPaneView, slightly modified through overridden functions. """
@@ -91,7 +92,7 @@ class ThreePaneView(TwoPaneView):
             self.headline_view.do_unselect_all(self.headline_view)
             self.clear_store(self.headline_store, self.toggle_headline_listening)
             feed = self.preferences.get_feed(self.last_item_feed_name)
-            feed.items.sort()  # drives read stories to the bottom of the list
+            feed.sort_items()  # drives read stories to the bottom of the list
             if feed:
                 ap = self.appearance()
                 for pos, item in enumerate(feed.items):

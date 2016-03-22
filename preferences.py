@@ -49,7 +49,7 @@ class Preferences:
     @staticmethod
     def default_appearance_preferences():
         p = dict()
-        p['View'] = 'Two-Pane'
+        p['View'] = 'Three-Pane'
 
         # TODO: Investigate if these font strings are reliably set among different DEs/WMs
         gs = Gio.Settings('org.gnome.desktop.interface')
@@ -60,12 +60,12 @@ class Preferences:
         p['Headline Font'] = default_font
         p['Story Font'] = document_font
 
-        p['Font Color'] = 'rgba(0, 0, 0, 1.0)'  # solid black.
+        p['Font Color'] = 'rgba(0, 0, 0, 1.0)'  # solid black
         p['Background Color'] = 'rgba(255, 255, 255, 1.0)'  # solid white
         p['Selection Font Color'] = 'rgba(255, 255, 255, 1.0)'  # solid white
         p['Selection Background Color'] = 'rgba(81, 126, 173, 1.0)'  # medium-dark blue
-        p['Read Color'] = 'rgba(128, 128, 128, .7)'  # slightly transparent gray
-        p['Filtered Color'] = 'rgba(128, 128, 128, .5)'  # slightly more transparent gray
+        p['Read Color'] = 'rgba(117, 80, 123, 1.0)'  # a 'clicked-link' purple.
+        p['Filtered Color'] = 'rgba(192, 47, 29, 1.0)'  # a dull uninviting red
         return p
 
     @staticmethod
@@ -102,8 +102,8 @@ class Preferences:
             self.preferences['Filters'] = list()
         else:
             filter_objects = list()
-            for trigger, case_sensitive in self.preferences['Filters']:
-                filter_objects.append(Filter(trigger, case_sensitive))
+            for filt, case_sensitive, hide_matches in self.preferences['Filters']:
+                filter_objects.append(Filter(filt, case_sensitive, hide_matches))
             self.preferences['Filters'] = filter_objects
 
     def feeds(self):
@@ -144,7 +144,7 @@ class Preferences:
 
         temp['Filters'] = list()
         for f in preferences['Filters']:
-            temp['Filters'].append([f.filter, f.case_sensitive])
+            temp['Filters'].append([f.filter, f.case_sensitive, f.hide_matches])
         return temp
 
     def get_appearance_css(self):

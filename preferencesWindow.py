@@ -23,7 +23,7 @@ from preferencesCategories import *
 
 
 class PreferencesWindow(Gtk.Dialog):
-    def __init__(self, parent, config):
+    def __init__(self, parent, config, cache):
         Gtk.Dialog.__init__(self, 'Preferences', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                                              'Save Changes', Gtk.ResponseType.OK))
         self.config = config
@@ -33,7 +33,7 @@ class PreferencesWindow(Gtk.Dialog):
 
         self.preferences_categories = [
                                        AppearancePreferences(self, self.preferences),
-                                       FeedsPreferences(self, self.preferences),
+                                       FeedsPreferences(self, self.preferences, cache),
                                        FiltrationPreferences(self, self.preferences),
                                       ]
 
