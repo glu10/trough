@@ -53,10 +53,9 @@ class PreferencesWindow(Gtk.Dialog):
             self.preferences[category.label] = category.gather_choices()
         self.config.update_preferences(self.preferences)
 
-        # TODO: Once each is implemented, iterate over preferences_categories instead of hardcoding each
+        self.parent.update_css()
         view = self.parent.switch_view()
         view.update_appearance(self.preferences['Appearance'])
-
 
         
 

@@ -18,6 +18,7 @@
     Trough homepage: https://github.com/glu10/trough
 """
 from threading import Lock
+from utilityFunctions import string_to_RGBA
 
 
 class Item:
@@ -42,14 +43,19 @@ class Item:
 
         return cls(label, title=href.text, link=link)
 
+    def get_color(self, appearance_dict):
+        keys = ['Font Color', 'Filtered Color', 'Read Color']
+        color_string = appearance_dict[keys[self.ranking()]]
+        return string_to_RGBA(color_string)
+
     def ranking(self):
-        """ Used for item ordering. Priority: Unread -> Unread but Filtered -> Read """
+        """ Used for item ordering/classification. Priority: Unread -> Unread but Filtered -> Read """
         if self.article:
-            return 3
-        elif self.filtered:
             return 2
-        else:
+        elif self.filtered:
             return 1
+        else:
+            return 0
 
     def __lt__(self, other):
         return self.ranking() < other.ranking()

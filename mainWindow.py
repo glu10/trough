@@ -30,6 +30,7 @@ class MainWindow(Gtk.Window):
     # __gsignals__ is used to register the names of custom signals
     __gsignals__ = {'item_scraped_event': (GObject.SIGNAL_RUN_FIRST, None, ()),
                     'feed_gathered_event': (GObject.SIGNAL_RUN_FIRST, None, ())}
+    __gtype_name__ = 'TroughWindow'
 
     def __init__(self, preferences, cache, **kwargs):
         Gtk.Window.__init__(self, **kwargs)
@@ -42,6 +43,7 @@ class MainWindow(Gtk.Window):
         self.set_default_size(*self.get_good_default_size())
         self.set_window_icon()
         self.preferences = preferences
+        self.css_provider = self.create_css()
         self.header_bar = self.create_header()
 
         self.gatherer = Gatherer(self, self.preferences, cache)
@@ -90,6 +92,16 @@ class MainWindow(Gtk.Window):
             self.show_all()
 
         return self.current_view
+
+    def create_css(self):
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_data(self.preferences.get_appearance_css())
+        context = Gtk.StyleContext()
+        context.add_provider_for_screen(self.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        return css_provider
+
+    def update_css(self):
+        self.css_provider.load_from_data(self.preferences.get_appearance_css())
 
     def create_header(self):
         header_bar = Gtk.HeaderBar(title="Trough", show_close_button=True)

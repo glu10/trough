@@ -1,7 +1,6 @@
 ## High Priority
-* Filtration (filtration text color + hide completely/send-to-bottom)
+* Add filter option for hiding matches completely.
 * Fake feeds rule examples and testing.
-* Read story tracking
 * Write more unit tests
 
 ## Medium Priority
@@ -11,8 +10,7 @@
 * Bottom status bar to communicate progress of network requests
 * Create Trough icon.
 * No/aborted connection error handling.
-* Change cache to be time-based rather than use-based.
+* Reader/writer lock for cache.
 
 ## Low Priority
 * Ctrl+Scroll on-the-fly adjustment of font size (would require writing preferences on_quit())
-* Font color through CSS use to replace use of deprecated function.

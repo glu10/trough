@@ -21,6 +21,7 @@
 import os
 from gi.repository import Gio
 from feed import Feed
+from filter import Filter
 import copy
 from utilityFunctions import load_file, write_file
 
@@ -42,7 +43,7 @@ class Preferences:
         preferences = dict()
         preferences['Appearance'] = Preferences.default_appearance_preferences()
         preferences['Feeds'] = Preferences.default_feeds_preferences()
-        preferences['Filtration'] = Preferences.default_filtration_preferences()
+        preferences['Filters'] = Preferences.default_filtration_preferences()
         return preferences
 
     @staticmethod
@@ -65,7 +66,6 @@ class Preferences:
         p['Selection Background Color'] = 'rgba(81, 126, 173, 1.0)'  # medium-dark blue
         p['Read Color'] = 'rgba(128, 128, 128, .7)'  # slightly transparent gray
         p['Filtered Color'] = 'rgba(128, 128, 128, .5)'  # slightly more transparent gray
-
         return p
 
     @staticmethod
@@ -84,13 +84,13 @@ class Preferences:
         return self.preferences['Feeds']
 
     def filtration_preferences(self):
-        return self.preferences['Filtration']
+        return self.preferences['Filters']
 
     def load_preferences(self):
         self.preferences = load_file(self.preferences_directory, self.preferences_file, self.preferences)
 
-        if not self.preferences['Feeds']:  # If there were no feeds listed in the preferences file
-            self.preferences['Feeds'] = dict()  # Replace None with an empty dictionary
+        if self.preferences['Feeds'] is None:
+            self.preferences['Feeds'] = dict()
         else:
             # Since we used JSON and not pickling, need to transform the serialized feed information into Feed objects
             feed_object_dict = dict()
@@ -98,11 +98,19 @@ class Preferences:
                 feed_object_dict[feed_name] = Feed.from_dict(feed_attributes)
             self.preferences['Feeds'] = feed_object_dict
 
+        if self.preferences['Filters'] is None:
+            self.preferences['Filters'] = list()
+        else:
+            filter_objects = list()
+            for trigger, case_sensitive in self.preferences['Filters']:
+                filter_objects.append(Filter(trigger, case_sensitive))
+            self.preferences['Filters'] = filter_objects
+
     def feeds(self):
         return self.preferences['Feeds']
 
     def filters(self):
-        return self.preferences['Filtration']
+        return self.preferences['Filters']
 
     def feed_list(self):
         return self.feeds().values()
@@ -136,5 +144,25 @@ class Preferences:
 
         temp['Filters'] = list()
         for f in preferences['Filters']:
-            temp['Filters'].append([f.trigger, f.case_sensitive])
+            temp['Filters'].append([f.filter, f.case_sensitive])
         return temp
+
+    def get_appearance_css(self):
+        ap = self.appearance_preferences()
+        p = (
+             'TroughWindow GtkTreeView, GtkTextView {\n'
+             '   background-color: ' + ap['Background Color'] + ';\n'
+             '   color: ' + ap['Font Color'] + ';\n'
+             '}\n'
+             'TroughWindow GtkTreeView:selected, GtkTextView:selected {\n'
+             '    background-color: ' + ap['Selection Background Color'] + ';\n'
+             '    color: ' + ap['Selection Font Color'] + ';\n'
+             '}\n'
+             'TroughWindow GtkTextView {'
+             '    font: ' + ap['Story Font'] + ';\n'
+             '}\n'
+             'TroughWindow GtkTreeView {\n'
+             '    font: ' + ap['Headline Font'] + ';\n'
+             '}\n'
+            )
+        return p.encode()

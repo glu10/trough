@@ -373,13 +373,13 @@ class FeedsPreferences(PreferencesCategory):
 
 class FiltrationPreferences(PreferencesCategory):
     def __init__(self, parent, preferences):
-        super().__init__(preferences, 'Filtration')
+        super().__init__(preferences, 'Filters')
         self.parent = parent
         self.filter_list = Gtk.ListStore(str, bool)
         self.view = Gtk.TreeView(model=self.filter_list)
 
     def create_display_area(self):
-        filter_column = Gtk.TreeViewColumn('Trigger', Gtk.CellRendererText(), text=0)
+        filter_column = Gtk.TreeViewColumn('Filter', Gtk.CellRendererText(), text=0)
         filter_column.set_alignment(.5)
         self.view.append_column(filter_column)
 
@@ -387,7 +387,7 @@ class FiltrationPreferences(PreferencesCategory):
         self.view.append_column(capitalization_column)
 
         for f in self.choices:
-            self.filter_list.append([f.trigger, f.case_sensitive])
+            self.filter_list.append([f.filter, f.case_sensitive])
 
         view_title = Gtk.Label()
         view_title.set_markup('<b>Filters</b>')
@@ -492,7 +492,7 @@ class FilterDialog(Gtk.Dialog):
                     return_val = [text, self.check.get_active()]
                     break
                 else:
-                    utilityFunctions.warning_popup(self, 'Error', 'The trigger ' + text + ' already exists.')
+                    utilityFunctions.warning_popup(self, 'Error', 'The filter ' + text + ' already exists.')
                     self.toggle_error(False)
 
             elif response == Gtk.ResponseType.CANCEL or response == Gtk.ResponseType.NONE:

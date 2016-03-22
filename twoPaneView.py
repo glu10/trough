@@ -22,6 +22,7 @@ from gi.repository import Gtk, Gdk
 from gi.repository import Pango
 from newsView import NewsView
 from textFormat import TextFormat
+from utilityFunctions import string_to_RGBA
 
 
 class TwoPaneView(NewsView):
@@ -46,7 +47,7 @@ class TwoPaneView(NewsView):
 
     @staticmethod
     def create_headline_store():
-        return Gtk.ListStore(str, str, int)
+        return Gtk.ListStore(str, str, int, Gdk.RGBA)  # feed name, item title, item position, item color
 
     @staticmethod
     def clear_store(store, listening_toggle_func):  # TODO: Find better way to clear store
@@ -68,7 +69,7 @@ class TwoPaneView(NewsView):
             if i == 0:  # Label
                 cell.props.weight_set = True
                 cell.props.weight = Pango.Weight.BOLD
-            col = Gtk.TreeViewColumn(columns[i], cell, text=i)
+            col = Gtk.TreeViewColumn(columns[i], cell, text=i, foreground_rgba=3)
             tree_view.append_column(col)
         return tree_view
 
@@ -121,23 +122,30 @@ class TwoPaneView(NewsView):
     def receive_feed(self, feed):
         if self.mark_feed(feed):
             for pos, item in enumerate(feed.items):
-                self.headline_store.append([feed.name, item.title, pos])
-
-    def text_containing_widgets(self):
-        return self.headline_view, self.content_view
+                self.headline_store.append([feed.name, item.title, pos, item.get_color(self.appearance())])
 
     def get_info_from_headline(self, headline):
         self.last_item_feed_name = headline[0]
         self.last_item_index = headline[2]
 
+    def color_headline(self, headline, color):
+        headline[3] = color
+
     def show_new_content(self, tree_view):
         model, it = tree_view.get_selection().get_selected()
         if model and it:
             self.get_info_from_headline(model[it])
+            self.color_headline(model[it], string_to_RGBA(self.appearance()['Read Color']))
             item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
             if item.article:
                 TextFormat.prepare_content_display(item, self.content_view)
             else:
                 self.gatherer.request(item)
+
+    def update_appearance(self, appearance_dict):
+        model = self.headline_view.get_model()
+        for it in model:
+            item = self.gatherer.item(it[0], it[2])
+            it[3] = item.get_color(appearance_dict)
 
 

@@ -17,16 +17,15 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 from twoPaneView import TwoPaneView
-
 
 class ThreePaneView(TwoPaneView):
     """ Pane 1: Feed names. Pane 2: Items of selected feed name. Pane 3: Contents of the selected item.
         Panes 2-3 are TwoPaneView, slightly modified through overridden functions. """
     def __init__(self, preferences, gatherer):
         self.label_store = Gtk.ListStore(str)
-        self.label_view = self.create_view(self.label_store, 'Feed')
+        self.label_view = self.create_view(self.label_store, 'Feed', text=0)
         self.label_scroll = self.create_headline_box(self.label_view, 20, 200)
         self.label_changed_handler = None
         self.toggle_label_listening()
@@ -40,20 +39,20 @@ class ThreePaneView(TwoPaneView):
         self.top_pane.pack2(self.headline_content_pane, resize=False, shrink=False)  # essentially packs in a Two-Pane
 
     @staticmethod
-    def create_view(store, label):
+    def create_view(store, label, **kwargs):
         view = Gtk.TreeView(model=store)
         cell = Gtk.CellRendererText()
-        col = Gtk.TreeViewColumn(label, cell, text=0)
+        col = Gtk.TreeViewColumn(label, cell, **kwargs)
         view.append_column(col)
         return view
 
     @staticmethod
     def create_headline_view(store):
-        return ThreePaneView.create_view(store, 'Headline')
+        return ThreePaneView.create_view(store, 'Headline', text=0, foreground_rgba=2)
 
     @staticmethod
     def create_headline_store():
-        return Gtk.ListStore(str, int)
+        return Gtk.ListStore(str, int, Gdk.RGBA)
 
     def toggle_label_listening(self):
         self.label_changed_handler = self.toggle_tree_view_listening(self.label_view,
@@ -71,14 +70,14 @@ class ThreePaneView(TwoPaneView):
         self.clear_store(self.label_store, self.toggle_label_listening)
         super().refresh()
 
-    def text_containing_widgets(self):
-        return self.label_view, self.headline_view, self.content_view
-
     def top_level(self):
         return self.top_pane
 
     def get_info_from_headline(self, headline):
         self.last_item_index = headline[1]
+
+    def color_headline(self, headline, color):
+        headline[2] = color
 
     def show_new_content(self, tree_view):
         self.focused_index = 1  # Correctly anchors left/right keyboard shortcut if the mouse was used.
@@ -91,13 +90,22 @@ class ThreePaneView(TwoPaneView):
             self.last_item_feed_name = model[it][0]
             self.headline_view.do_unselect_all(self.headline_view)
             self.clear_store(self.headline_store, self.toggle_headline_listening)
-
             feed = self.preferences.get_feed(self.last_item_feed_name)
+            feed.items.sort()  # drives read stories to the bottom of the list
             if feed:
+                ap = self.appearance()
                 for pos, item in enumerate(feed.items):
-                    self.headline_store.append([item.title, pos])
+                    self.headline_store.append([item.title, pos, item.get_color(ap)])
 
     def receive_feed(self, feed):
         if self.mark_feed(feed):
             self.label_store.append([feed.name])
+
+    def update_appearance(self, appearance_dict):
+        model = self.headline_view.get_model()
+        feed = self.preferences.get_feed(self.last_item_feed_name)
+        for it in model:
+            item = feed.items[it[1]]
+            self.color_headline(it, item.get_color(appearance_dict))
+
 

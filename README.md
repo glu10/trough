@@ -17,7 +17,7 @@ A GTK+ RSS news reader (currently in the early stages of development)
 * Read story tracking (entirely local, auto-clears with cache or program exit if no caching is used)
 * Category support
 * Filtration based on item title/description (not content for consistency reasons and less false positives)
-* Per-feed time-based caching strategies (never/minutes/hours/days)
+* Cache scraped stories until they are no longer part of the feed.
 
 ## Avoiding
 * Being cross-platform (simplifies testing). 
