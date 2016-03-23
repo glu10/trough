@@ -155,6 +155,12 @@ class GathererWorkerThread(Thread):
                             self.gather_feed(feed)
 
                         if feed.items:
+                            # Checks the cache for any item link before handing the feed over
+                            for item in feed.items:
+                                hit = self.cache.query(item.link)
+                                if hit:
+                                    item.article = hit
+
                             self.fulfilled_feed_queue.put(feed)
                             self.notify_main_thread('feed_gathered_event')
 
@@ -203,9 +209,6 @@ class GathererWorkerThread(Thread):
                           ' has no title, description, or link. Skipped.' + str(entry))
                 else:
                     item = Item(feed.name, title, Gatherer.description_cleanup(description), link)
-                    hit = self.cache.query(item.link)
-                    if hit:
-                        item.article = hit
                     items.append(item)
 
         feed.items = items

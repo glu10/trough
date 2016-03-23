@@ -38,11 +38,13 @@ class WrappedScrapeResolver(RuleResolver):
         pass  # Should not be called because it doesn't make sense for a wrapper.
 
     def select_rule(self, link, job):
+        soup = job.get_soup(link)
+
         result = None
         if self.custom_resolver.is_usable():
-            result = self.custom_resolver.select_rule(link, job)
+            result = self.custom_resolver.select_rule(link, job, soup)
         if not result:
-            result = self.default_resolver.select_rule(link, job)
+            result = self.default_resolver.select_rule(link, job, soup)
         assert type(result) == list
         return result
 
@@ -72,8 +74,9 @@ class DefaultScrapeResolver(RuleResolver):
             print('Scraping rule file', rule_file_string, 'will not be used due to the following error:', e)
             return False
 
-    def select_rule(self, link, job):
-        soup = job.get_soup(link)
+    def select_rule(self, link, job, soup=None):
+        if not soup:
+            soup = job.get_soup(link)
 
         if not self.is_usable():
             return self._fallback_rule(soup)

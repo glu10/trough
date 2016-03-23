@@ -90,18 +90,19 @@ def washington_post(soup, job):
     return soup.find('article', {'itemprop': 'articleBody'}).find_all('p')
 
 
-rules = {r'abcnews.go.com': abc_news,
-         r'bloomberg.com': bloomberg,
-         r'cnn.com': cnn,
-         r'foxnews.com': fox_news,
-         r'huffingtonpost.com': huffington_post,
-         r'nbcnews.com': nbc_news,
-         r'nytimes.com': new_york_times,
-         r'npr.org': npr,
-         r'reuters.com': reuters,
-         r'time.com': time,
-         r'usatoday.com': usa_today,
-         r'washingtonpost.com': washington_post,
+rules = {r'abcnews\.go\.com': abc_news,
+         r'bloomberg\.com': bloomberg,
+         r'cnn\.com': cnn,
+         r'foxnews\.com': fox_news,
+         r'huffingtonpost\.com': huffington_post,
+         r'nbcnews\.com': nbc_news,
+         r'nytimes\.com': new_york_times,
+         r'npr\.org': npr,
+         r'reuters\.com': reuters,
+         r'time\.com': time,
+         r'usatoday\.com': usa_today,
+         r'washingtonpost\.com': washington_post,
          }
 
+# Transforms the dictionary into a key/value list and sorts it by regular expression length (longest to shortest)
 ordered_rules = sorted(rules.items(), key=lambda x: len(x[0]))  # The object required by a RuleResolver

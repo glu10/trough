@@ -28,7 +28,7 @@ def check_link_for_cycle(func):
             if self._add_link(link):
                 return func(self, link)
             else:
-                raise RuntimeError('Link cycle detected on ' + link + 'Abandoning the scrape job.')
+                raise RuntimeError('Link cycle detected on ' + link + ' Abandoning the scrape job.')
         return wrapper
 
 
@@ -63,7 +63,6 @@ class ScrapeJob:
         html = self.session.get(link, headers={'User-Agent': 'Mozilla/5.0'}).content
         return BeautifulSoup(html, 'html.parser')
 
-    @check_link_for_cycle
     def get_contents(self, link):
         return self.resolver.select_rule(link, self)
 

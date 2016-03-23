@@ -1,4 +1,6 @@
 import unittest
+import gi
+gi.require_version('Gtk', '3.0')
 from bs4 import BeautifulSoup
 from item import Item
 

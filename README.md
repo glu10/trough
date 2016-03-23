@@ -10,17 +10,20 @@ A GTK+ RSS news reader (currently in the early stages of development)
 * [PyGObject](https://wiki.gnome.org/action/show/Projects/PyGObject)
 * [Requests](http://docs.python-requests.org/en/latest/)
 
-## Planned Features
+
+## Implemented Features
 * Simple, customizable interface.
 * Content scraping, allowing users to provide custom scraping rules to complement or override default rules.
+* Persistent cache for scraped articles, automatically discards inactive content.
 * "Fake feeds", set up a scrape rule for titled links and pretend it was an RSS feed.
-* Read story tracking (entirely local, auto-clears with cache or program exit if no caching is used)
-* Category support
+* Read story tracking (entirely local, auto-clears with cache)
 * Filtration based on item title/description (not content for consistency reasons and less false positives)
-* Cache scraped stories until they are no longer part of the feed.
 
-## Avoiding
-* Being cross-platform (simplifies testing). 
+## Planned Features
+* Category support
+
+## Purposefully Excluded Features
+* Being cross-platform (for simplified testing). 
 * Bookmark management (browsers can do that).
 * Podcast/Torrent/any other non-text integration (feature creep).
 * Third-party service integration (feature creep/privacy concerns).

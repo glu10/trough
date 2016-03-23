@@ -105,8 +105,9 @@ class ThreePaneView(TwoPaneView):
     def update_appearance(self, appearance_dict):
         model = self.headline_view.get_model()
         feed = self.preferences.get_feed(self.last_item_feed_name)
-        for it in model:
-            item = feed.items[it[1]]
-            self.color_headline(it, item.get_color(appearance_dict))
+        if feed and feed.items:
+            for it in model:
+                item = feed.items[it[1]]
+                self.color_headline(it, item.get_color(appearance_dict))
 
 

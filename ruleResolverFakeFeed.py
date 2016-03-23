@@ -35,7 +35,7 @@ class FakeFeedResolver(RuleResolver):
             for name, func in rule_module.rules.items():
                 assert type(name) == str
                 assert hasattr(func, '__call__')
-                assert len(signature(func).parameters) == 1  # Makes sure each rule func accepts exactly 1 argument.
+                assert len(signature(func).parameters) == 2  # Makes sure each rule func accepts exactly 1 argument.
             return True
         except (AssertionError, AttributeError) as e:
             print('Scraping rule file', rule_file_string, 'will not be used due to the following error:', e)
@@ -46,8 +46,8 @@ class FakeFeedResolver(RuleResolver):
             return self._fallback_rule(feed_name)
 
         result = None
-        if feed_name in self.rule_module:
-            result = self.rule_module[feed_name]()
+        if feed_name in self.rule_module.rules:
+            result = self.rule_module.rules[feed_name](feed_name, job)
         if not result:
             result = self._fallback_rule(feed_name)
         return result

@@ -1,6 +1,5 @@
 import unittest
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 import gi
 gi.require_version('Gtk', '3.0')  # Silences warning
 from twoPaneView import TwoPaneView
@@ -67,8 +66,9 @@ class TestTwoPaneView(unittest.TestCase):
         self.feeds = CommonViewSetup.make_feeds()
         feed_dict = CommonViewSetup.names_to_feed_dict(self.feeds)
         self.gatherer = CommonViewSetup.mock_gatherer(feed_dict)
+        self.ap = Preferences.default_appearance_preferences()
         preferences = MagicMock()
-        preferences.appearance_preferences.return_value = Preferences.default_appearance_preferences()
+        preferences.appearance_preferences.return_value = self.ap
         self.view = TwoPaneView(preferences, self.gatherer)
 
     def test_refresh(self):
@@ -104,16 +104,13 @@ class TestTwoPaneView(unittest.TestCase):
             # This was a problem that had to be mitigated, a clear should NOT be throwing signals causing this call
             self.assertFalse(m.called)
 
-    def test_text_containing_widgets(self):
-        self.assertEqual(2, len(self.view.text_containing_widgets()))
-
     def test_show_content(self):
         feed = self.feeds[0]
         target_item = feed.items[0]
+        target_item.article = ['article']
         self.view.receive_feed(feed)
 
         # Case where an item article is present, the content should be prepared
-        target_item.article = ['article']
         m = MagicMock()
         with patch('textFormat.TextFormat.prepare_content_display', m):
             self.view.headline_view.set_cursor(0)
@@ -136,8 +133,9 @@ class TestThreePaneView(unittest.TestCase):
         self.feeds = CommonViewSetup.make_feeds()
         feed_dict = CommonViewSetup.names_to_feed_dict(self.feeds)
         self.gatherer = CommonViewSetup.mock_gatherer(feed_dict)
+        self.ap = Preferences.default_appearance_preferences()
         preferences = MagicMock()
-        preferences.appearance_preferences.return_value = Preferences.default_appearance_preferences()
+        preferences.appearance_preferences.return_value = self.ap
         self.view = ThreePaneView(preferences, self.gatherer)
 
     def test_receive_feed(self):
@@ -157,10 +155,12 @@ class TestThreePaneView(unittest.TestCase):
         for i, feed in enumerate(self.feeds):
             self.assertEqual(feed.name, self.view.label_store[i][0])
             self.view.preferences = self.gatherer  # mocks getting the feed by name
-            self.view.label_view.set_cursor(i)
-            self.assertEqual(len(self.view.headline_store), len(feed.items))
-            for j, item in enumerate(feed.items):
-                self.assertEqual(item.title, self.view.headline_store[j][0])
+            m = MagicMock(return_value=self.ap)
+            with patch('threePaneView.ThreePaneView.appearance', m):
+                self.view.label_view.set_cursor(i)
+                self.assertEqual(len(self.view.headline_store), len(feed.items))
+                for j, item in enumerate(feed.items):
+                    self.assertEqual(item.title, self.view.headline_store[j][0])
 
     def test_clear_labels(self):
         view = self.view
@@ -174,17 +174,22 @@ class TestThreePaneView(unittest.TestCase):
 
     def test_show_content(self):
         feed = self.feeds[0]
-        target_item = feed.items[0]
         self.view.receive_feed(feed)
         self.view.preferences = self.gatherer  # mocks getting the feed by name
 
         # Case where an item article is present, the content should be prepared
-        target_item.article = ['article']
+
         m = MagicMock()
-        with patch('textFormat.TextFormat.prepare_content_display', m):
-            self.view.label_view.set_cursor(0)
-            self.view.headline_view.set_cursor(0)
-            m.assert_called_with(target_item, self.view.content_view)
+        t = MagicMock(return_value=self.ap)
+        with patch('textFormat.TextFormat.prepare_content_display', m):  # stub to catch if the call is made
+            with patch('threePaneView.ThreePaneView.appearance', t): # calls to appearance returns default appearances
+                self.view.label_view.set_cursor(0)  # sorts the feed item list!
+
+                target_item = self.feeds[0].items[0]
+                target_item.article = ['article']
+
+                self.view.headline_view.set_cursor(0)
+                m.assert_called_with(target_item, self.view.content_view)
 
     def test_missing_content(self):
         feed = self.feeds[0]
@@ -194,9 +199,8 @@ class TestThreePaneView(unittest.TestCase):
 
         # Case where no item article present, the content should be requested
         target_item.article = None
-        self.view.label_view.set_cursor(0)
-        self.view.headline_view.set_cursor(0)
-        self.gatherer.request.assert_called_with(target_item)
-
-    def test_text_containing_widgets(self):
-        self.assertEqual(3, len(self.view.text_containing_widgets()))
+        m = MagicMock(return_value=self.ap)
+        with patch('threePaneView.ThreePaneView.appearance', m):
+                    self.view.label_view.set_cursor(0)  # this sorts the feed item list but all "unread" so no changes.
+                    self.view.headline_view.set_cursor(0)
+                    self.gatherer.request.assert_called_with(target_item)
