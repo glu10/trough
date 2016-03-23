@@ -57,13 +57,6 @@ class Item:
         else:
             return 0
 
-    def __lt__(self, other):
-        return self.ranking() < other.ranking()
-
-    def __eq__(self, other):
-        return self.ranking() == other.ranking()
-
-
 
 
 
