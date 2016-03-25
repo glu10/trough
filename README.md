@@ -23,7 +23,7 @@ A GTK+ RSS news reader (currently in the early stages of development)
 * Category support
 
 ## Purposefully Excluded Features
-* Being cross-platform (Linux only, for simplified testing). 
+* Being cross-platform (Linux is the only target platform).
 * Bookmark management (browsers can do that).
 * Podcast/Torrent/any other non-text integration (feature creep).
 * Third-party service integration (feature creep/privacy concerns).
