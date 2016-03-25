@@ -67,7 +67,7 @@ def hacker_news_stories(label, job):
     items = list()
     soup = job.get_soup('https://news.ycombinator.com/')
     titles = soup.find('table', {'class': 'itemlist'}).findAll('td', {'class': 'title'})
-    for title in titles:
+    for title in titles[:-1]:
         a = title.find('a', href=True)
         if a:
             items.append(Item(label, a.get_text(), '', a['href']))

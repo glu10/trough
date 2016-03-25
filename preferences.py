@@ -56,6 +56,12 @@ class Preferences:
         default_font = gs.get_string('font-name')
         document_font = gs.get_string('document-font-name')
 
+        # Helps if one is set but not the other.
+        if not default_font and document_font:
+            default_font = document_font
+        elif not document_font and default_font:
+            document_font = default_font
+
         p['Category Font'] = default_font
         p['Headline Font'] = default_font
         p['Story Font'] = document_font

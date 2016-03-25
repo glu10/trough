@@ -12,18 +12,18 @@ A GTK+ RSS news reader (currently in the early stages of development)
 
 
 ## Implemented Features
-* Simple, customizable interface.
-* Content scraping, allowing users to provide custom scraping rules to complement or override default rules.
-* Persistent cache for scraped articles, automatically discards inactive content.
-* "Fake feeds", set up a scrape rule for titled links and pretend it was an RSS feed.
+* Customizable interface.
+* Content scraping, with support for custom scraping rules.
+* Fake feeds - scraping rules can mimic an RSS feed by scraping links. 
+* Filtration based on item title/description
+* Persistent cache for scraped articles. Inactive content is automatically discarded.
 * Read story tracking (entirely local, auto-clears with cache)
-* Filtration based on item title/description (not content for consistency reasons and less false positives)
 
 ## Planned Features
 * Category support
 
 ## Purposefully Excluded Features
-* Being cross-platform (for simplified testing). 
+* Being cross-platform (Linux only, for simplified testing). 
 * Bookmark management (browsers can do that).
 * Podcast/Torrent/any other non-text integration (feature creep).
 * Third-party service integration (feature creep/privacy concerns).
@@ -38,9 +38,9 @@ A GTK+ RSS news reader (currently in the early stages of development)
 convenient, this approach brings with it all of the heaviness of a browser, as well as all of the visual noise of web 
 pages. Trough takes a different approach by being based entirely around textual scraping. This is lightweight and 
 allows users to decide exactly what they want to see, which is ideal for rapid news reading. Scraping has its own 
-downsides, since scraping rules break when web designs inevitably change, and no collection of scraping rules could 
-possibly be comprehensive. Due to this, Trough is primarily aimed towards advanced users who are willing to tweak and 
-create scraping rules.
+downsides though, since scraping rules break when web designs inevitably change, and no collection of scraping rules 
+could possibly be comprehensive. Due to this, Trough is primarily aimed towards advanced users who are willing to tweak 
+and create scraping rules.
 
 #### But what about sounds/pictures/videos?
 These elements are commonly fluff in news reading and it is by design that Trough does not attempt to scrape or support

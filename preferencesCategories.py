@@ -28,6 +28,7 @@ from filter import Filter
 
 
 class PreferencesCategory(metaclass=ABCMeta):
+    padding = 10
 
     def __init__(self, preferences, label):
         self.choices = dict()
@@ -40,6 +41,38 @@ class PreferencesCategory(metaclass=ABCMeta):
         """
         Create the GUI components that will be in the preferences page
         """
+
+    def create_section(self, label_text, child):
+        label = Gtk.Label()
+        label.set_markup('<b>' + label_text + '</b>')
+        label.set_alignment(0, .2)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        vbox.add(label)
+        vbox.add(child)
+
+        return vbox
+
+    def create_section_options(self, label_texts, actionables):
+        labels_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        actionables_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        for label_text in label_texts:
+            labels_vbox.pack_start(self.descriptor_label(label_text), True, False, 0)
+
+        for actionable in actionables:
+            actionables_vbox.pack_start(actionable, True, False, 0)
+
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=True)
+        hbox.add(labels_vbox)
+        hbox.add(actionables_vbox)
+        return hbox
+
+    def surround_with_padding(self, to_be_padded):
+        alignment = Gtk.Alignment()
+        alignment.set_padding(self.padding, self.padding, self.padding, self.padding)
+        alignment.add(to_be_padded)
+        return alignment
 
     def gather_choices(self):
         """
@@ -83,51 +116,36 @@ class AppearancePreferences(PreferencesCategory):
         self.view_box = None
 
         self.font_idents = ['Category Font', 'Headline Font', 'Story Font']
-        self.font_buttons = []
+        self.font_buttons = [self.font_button(font) for font in self.font_idents]
 
         self.color_idents = ['Font Color', 'Background Color', 'Selection Font Color', 'Selection Background Color',
                              'Read Color', 'Filtered Color']
-
-        self.color_buttons = []
+        self.color_buttons = [self.color_button(color) for color in self.color_idents]
 
     def create_display_area(self):
-        grid = Gtk.Grid(row_spacing=3, column_spacing=7, orientation=Gtk.Orientation.VERTICAL)
+        top_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
 
         # View selection
-        grid.add(self.bold_label('View'))
         self.view_box = self.view_combo_box()
-        grid.add(self.view_box)
+        view_vbox = self.create_section('View', self.create_section_options([''], [self.view_box]))
+        top_vbox.add(view_vbox)
+
 
         # Font selection
-        grid.add(self.bold_label('Fonts'))
+        font_section = self.create_section('Fonts', self.create_section_options(self.font_idents, self.font_buttons))
+        top_vbox.add(font_section)
 
-        for font in self.font_idents:
-            label = self.descriptor_label(font)
-            grid.add(label)
-            fb = self.font_button(font)
-            grid.attach_next_to(fb, label, Gtk.PositionType.RIGHT, 1, 1)
-            self.font_buttons.append(fb)
 
         # Font Colors
-        grid.add(self.bold_label('Colors'))
-
-        for c in self.color_idents:
-            label = self.descriptor_label(c)
-            grid.add(label)
-            cb = self.color_button(c)
-            grid.attach_next_to(cb, label, Gtk.PositionType.RIGHT, 1, 1)
-            self.color_buttons.append(cb)
+        color_section = self.create_section('Colors', self.create_section_options(self.color_idents, self.color_buttons))
+        top_vbox.add(color_section)
 
         # Reset to Defaults Button
         reset_button = Gtk.Button(label="Reset to defaults")
         reset_button.connect("clicked", self.confirm_and_reset_defaults)
+        top_vbox.add(reset_button)
 
-        # The empty labels are just space fillers for the reset to defaults button
-        grid.add(Gtk.Label(""))
-        grid.add(reset_button)
-        grid.add(Gtk.Label(""))
-
-        return grid
+        return self.surround_with_padding(top_vbox)
 
     def font_button(self, pane):
         fb = Gtk.FontButton(title=pane, font_name=self.choices[pane])
@@ -254,7 +272,7 @@ class FeedsPreferences(PreferencesCategory):
         if len(self.feed_list) > 0:
             self.attempt_selection(self.view.get_selection(), 0)
 
-        return vbox
+        return self.surround_with_padding(vbox)
 
     @staticmethod
     def info_placeholder():
@@ -440,7 +458,7 @@ class FiltrationPreferences(PreferencesCategory):
         vbox.pack_start(helpful_label, False, False, 5)
         vbox.add(hbox)
         vbox.pack_end(frame, True, True, 0)
-        return vbox
+        return self.surround_with_padding(vbox)
 
     def add_filter(self, button):
         fd = FilterDialog('Add a filter', self.parent, self.filter_list)
