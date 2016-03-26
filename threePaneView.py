@@ -103,6 +103,13 @@ class ThreePaneView(TwoPaneView):
             self.label_store.append([feed.name])
 
     def update_appearance(self, appearance_dict):
+
+        # Delete old feeds that got removed
+        feed_model = self.label_view.get_model()
+        for it in feed_model:
+            if not self.preferences.get_feed(it[0]):
+                feed_model.remove(it.iter)
+
         model = self.headline_view.get_model()
         feed = self.preferences.get_feed(self.last_item_feed_name)
         if feed and feed.items:
@@ -110,8 +117,11 @@ class ThreePaneView(TwoPaneView):
                 item = feed.items[it[1]]
                 if item:
                     self.color_headline(it, item.get_color(appearance_dict))
-                else:
-                    model.remove(it.iter)
+        elif not feed:
+            for it in model:
+                model.remove(it.iter)
+
+
 
 
 
