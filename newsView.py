@@ -54,7 +54,7 @@ class NewsView(metaclass=ABCMeta):
     @abstractmethod
     def change_position(self, delta):
         """
-        Change which story is being displayed, by going up or down a list.
+        Changes which pane within a view currently has focus (used with left/right keys).
         """
 
     def open_link(self, url):

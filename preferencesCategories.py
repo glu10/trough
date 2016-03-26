@@ -261,12 +261,15 @@ class FeedsPreferences(PreferencesCategory):
         feed_hbox.pack_start(feed_frame, True, True, 0)
         feed_hbox.pack_end(info_frame, True, True, 1)
 
-        helpful_label = Gtk.Label('Changes appear on the next refresh.')
+        helpful_label = Gtk.Label('New feeds appear on the next refresh.')
         helpful_label.set_line_wrap(True)
+        helpful_align = Gtk.Alignment()
+        helpful_align.set_padding(0, self.padding, 0, 0)
+        helpful_align.add(helpful_label)
 
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        vbox.pack_start(helpful_label, False, False, 5)
-        vbox.pack_start(button_hbox, False, False, 0)
+        vbox.add(helpful_align)
+        vbox.add(button_hbox)
         vbox.pack_end(feed_hbox, True, True, 0)
 
         if len(self.feed_list) > 0:
@@ -453,9 +456,13 @@ class FiltrationPreferences(PreferencesCategory):
         frame = Gtk.Frame()
         frame.add(scroll_vbox)
 
-        helpful_label = Gtk.Label('Changes appear on the next refresh.')
+        helpful_label = Gtk.Label('Filter changes appear on the next refresh.')
         helpful_label.set_line_wrap(True)
-        vbox.pack_start(helpful_label, False, False, 5)
+        helpful_align = Gtk.Alignment()
+        helpful_align.set_padding(0, self.padding, 0, 0)
+        helpful_align.add(helpful_label)
+
+        vbox.add(helpful_align)
         vbox.add(hbox)
         vbox.pack_end(frame, True, True, 0)
         return self.surround_with_padding(vbox)

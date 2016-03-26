@@ -146,6 +146,10 @@ class TwoPaneView(NewsView):
         model = self.headline_view.get_model()
         for it in model:
             item = self.gatherer.item(it[0], it[2])
-            it[3] = item.get_color(appearance_dict)
+            if item:
+                it[3] = item.get_color(appearance_dict)
+            else:  # This feed was removed
+                model.remove(it.iter)
+
 
 

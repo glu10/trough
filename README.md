@@ -72,8 +72,9 @@ You can use pip or your distribution's repositories. Here are instructions for s
 Trough itself has to be downloaded from GitHub.
 
 #### Running
-`cd` to the directory where you stored Trough's source files and run `python3 trough.py`. Note that the
-program stores a preferences file at ~/.config/trough/preferences.json and a cache file at 
+`python3 trough.py`
+
+Note that the program stores a preferences file at ~/.config/trough/preferences.json and a cache file at 
 ~/.cache/trough/cache.json
 
 If the program fails to start then you are likely just missing a dependency. If it used to work but a git pull broke it,

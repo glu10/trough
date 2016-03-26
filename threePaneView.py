@@ -108,6 +108,10 @@ class ThreePaneView(TwoPaneView):
         if feed and feed.items:
             for it in model:
                 item = feed.items[it[1]]
-                self.color_headline(it, item.get_color(appearance_dict))
+                if item:
+                    self.color_headline(it, item.get_color(appearance_dict))
+                else:
+                    model.remove(it.iter)
+
 
 

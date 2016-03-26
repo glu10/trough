@@ -80,8 +80,7 @@ class Preferences:
 
     @staticmethod
     def default_filtration_preferences():
-        p = list()
-        return p
+        return list()
 
     def appearance_preferences(self):
         return self.preferences['Appearance']
