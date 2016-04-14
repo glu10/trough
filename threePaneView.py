@@ -93,8 +93,8 @@ class ThreePaneView(TwoPaneView):
             self.headline_view.do_unselect_all(self.headline_view)
             self.clear_store(self.headline_store, self.toggle_headline_listening)
             feed = self.preferences.get_feed(self.last_item_feed_name)
-            feed.sort_items()  # drives read stories to the bottom of the list
             if feed:
+                feed.sort_items()  # drives read stories to the bottom of the list
                 ap = self.appearance()
                 for pos, item in enumerate(feed.items):
                     self.headline_store.append([item.title, pos, item.get_color(ap)])

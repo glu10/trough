@@ -156,7 +156,7 @@ class Preferences:
         ap = self.appearance_preferences()
         if Gtk.get_major_version() == 3 and Gtk.get_minor_version() >= 20:  # GTK 3.20 broke previous CSS
              p = (
-                 '#storyview text, #labelview:backdrop, #headlineview:backdrop{\n'
+                 '#storyview text, #labelview, #headlineview{\n'
                  '   background-color: ' + ap['Background Color'] + ';\n'
                  '   color: ' + ap['Font Color'] + ';\n'
                  '}\n'
