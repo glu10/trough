@@ -19,7 +19,7 @@
 """
 
 import os
-from gi.repository import Gio
+from gi.repository import Gtk, Gio
 from feed import Feed
 from filter import Filter
 import copy
@@ -154,20 +154,41 @@ class Preferences:
 
     def get_appearance_css(self):
         ap = self.appearance_preferences()
-        p = (
-             'TroughWindow GtkTreeView, GtkTextView {\n'
-             '   background-color: ' + ap['Background Color'] + ';\n'
-             '   color: ' + ap['Font Color'] + ';\n'
-             '}\n'
-             'TroughWindow GtkTreeView:selected, GtkTextView:selected {\n'
-             '    background-color: ' + ap['Selection Background Color'] + ';\n'
-             '    color: ' + ap['Selection Font Color'] + ';\n'
-             '}\n'
-             'TroughWindow GtkTextView {'
-             '    font: ' + ap['Story Font'] + ';\n'
-             '}\n'
-             'TroughWindow GtkTreeView {\n'
-             '    font: ' + ap['Headline Font'] + ';\n'
-             '}\n'
-            )
+        if Gtk.get_major_version() == 3 and Gtk.get_minor_version() >= 20:  # GTK 3.20 broke previous CSS
+             p = (
+                 '#storyview text, #labelview:backdrop, #headlineview:backdrop{\n'
+                 '   background-color: ' + ap['Background Color'] + ';\n'
+                 '   color: ' + ap['Font Color'] + ';\n'
+                 '}\n'
+                 '* + #labelview, * + #headlineview{\n'
+                 '   background-color: ' + ap['Background Color'] + ';\n'
+                 '}\n'
+                 '#storyview selection, #labelview:selected, #headlineview:selected{\n'
+                 '    background-color: ' + ap['Selection Background Color'] + ';\n'
+                 '    color: ' + ap['Selection Font Color'] + ';\n'
+                 '}\n'
+                 '#storyview {'
+                 '    font: ' + ap['Story Font'] + ';\n'
+                 '}\n'
+                 '#headlineview {\n'
+                 '    font: ' + ap['Headline Font'] + ';\n'
+                 '}\n'
+                )
+        else:
+             p = (
+                 '#storyview, #labelview, #headlineview {\n'
+                 '   background-color: ' + ap['Background Color'] + ';\n'
+                 '   color: ' + ap['Font Color'] + ';\n'
+                 '}\n'
+                 '#storyview:selected, #labelview:selected, #headlineview:selected {\n'
+                 '    background-color: ' + ap['Selection Background Color'] + ';\n'
+                 '    color: ' + ap['Selection Font Color'] + ';\n'
+                 '}\n'
+                 '#storyview {'
+                 '    font: ' + ap['Story Font'] + ';\n'
+                 '}\n'
+                 '#headlineview {\n'
+                 '    font: ' + ap['Headline Font'] + ';\n'
+                 '}\n'
+             )
         return p.encode()

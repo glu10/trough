@@ -33,12 +33,12 @@ class TwoPaneView(NewsView):
         # GUI components
         self.headline_store = self.create_headline_store()
         self.headline_view = self.create_headline_view(self.headline_store)
+        self.headline_view.set_name('headlineview')  # For CSS
         self.headline_scroll = self.create_headline_box(self.headline_view, 400, 200)
         self.headline_changed_handler = None
         self.toggle_headline_listening()
 
         self.content_scroll, self.content_view = self.create_content_box()
-
         self.headline_content_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self.headline_content_pane.pack1(self.headline_scroll, resize=False, shrink=False)  # Left
         self.headline_content_pane.pack2(self.content_scroll, resize=True, shrink=True)  # Right
@@ -63,7 +63,7 @@ class TwoPaneView(NewsView):
     @staticmethod
     def create_headline_view(headline_store):
         tree_view = Gtk.TreeView(model=headline_store)
-        columns = ('Feed', 'Headline')
+        columns = ('Feeds', 'Headlines')
         for i in range(len(columns)):
             cell = Gtk.CellRendererText()
             if i == 0:  # Label
@@ -84,9 +84,8 @@ class TwoPaneView(NewsView):
     @staticmethod
     def create_content_box():
         text_scroll = Gtk.ScrolledWindow()
-        text_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.ALWAYS)
-        text_view = Gtk.TextView(editable=False, cursor_visible=False)
-        text_view.set_size_request(500, 200)
+        text_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.ALWAYS)
+        text_view = TextFormat.prepare_content_display(None, None)
         text_scroll.add(text_view)
         return text_scroll, text_view
 

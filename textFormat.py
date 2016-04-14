@@ -37,31 +37,32 @@ class TextFormat:
         else:
             text_view = textview
 
-        # Border sizes
-        text_view.set_border_window_size(Gtk.TextWindowType.LEFT, 10)
-        text_view.set_border_window_size(Gtk.TextWindowType.RIGHT, 12)  # Slightly more than left due to scroll bar
-        text_view.set_border_window_size(Gtk.TextWindowType.TOP, 5)
-        text_view.set_border_window_size(Gtk.TextWindowType.TOP, 5)
+        text_view.set_name('storyview') # For CSS
 
+        # Border sizes
+        text_view.set_left_margin(12)
+        text_view.set_right_margin(12)
+        text_view.set_bottom_margin(5)
+        text_view.set_top_margin(5)
+
+        text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         text_view.set_editable(False)
         text_view.set_cursor_visible(False)
-        text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+
         text_buffer = Gtk.TextBuffer()
         text_view.set_buffer(text_buffer)
 
-        TextFormat.headline(item.title, text_buffer)
-        TextFormat.description(item.description, text_buffer)
-        TextFormat.article(item, text_buffer)
-
-        # TODO: The link button doesn't work at the moment and looked horrible even when it did.
-        # TextFormat.link_button(item.link, text_buffer, text_view)
-
+        if item:
+            TextFormat.headline(item.title, text_buffer)
+            TextFormat.description(item.description, text_buffer)
+            TextFormat.article(item.article, text_buffer)
         return text_view
 
     @staticmethod
     def headline(headline, text_buffer):
-        center = text_buffer.create_tag("center", justification=Gtk.Justification.CENTER, weight=Pango.Weight.BOLD)
-        text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), headline, center)
+        if headline:
+            center = text_buffer.create_tag("center", justification=Gtk.Justification.CENTER, weight=Pango.Weight.BOLD)
+            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), headline, center)
 
     @staticmethod
     def description(description, text_buffer):
@@ -70,20 +71,12 @@ class TextFormat:
             text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), "\n\n" + description, center)
 
     @staticmethod
-    def article(item, text_buffer):
-        text_buffer.insert(TextFormat.__pos(text_buffer), "\n\n")
-        paragraph = text_buffer.create_tag("paragraph", pixels_below_lines=5, pixels_above_lines=5)
-        for p in item.article:
-            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), p + "\n", paragraph)
-
-    @staticmethod
-    def link_button(link, text_buffer, text_view):
-        centerbold = text_buffer.create_tag("linkbutton", justification=Gtk.Justification.CENTER)
-        text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), ' ', centerbold)
-        anchor = text_buffer.create_child_anchor(TextFormat.__pos(text_buffer))
-        button = Gtk.LinkButton.new_with_label(link, "Read in Browser")
-        button.set_relief(Gtk.ReliefStyle.NONE)
-        text_view.add_child_at_anchor(button, anchor)
+    def article(article, text_buffer):
+        if article:
+            text_buffer.insert(TextFormat.__pos(text_buffer), "\n\n")
+            paragraph = text_buffer.create_tag("paragraph", pixels_below_lines=5, pixels_above_lines=5)
+            for p in article:
+                text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), p + "\n", paragraph)
 
     @staticmethod
     def __pos(text_buffer):  # Convenience function for readability

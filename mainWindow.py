@@ -40,7 +40,7 @@ class MainWindow(Gtk.Window):
         self.connect('item_scraped_event', self.on_item_scraped)
         self.connect('feed_gathered_event', self.on_feed_gathered)
 
-        self.set_default_size(*self.get_good_default_size())
+        self.set_good_default_size()
         self.set_window_icon()
         self.preferences = preferences
         self.css_provider = self.create_css()
@@ -53,14 +53,18 @@ class MainWindow(Gtk.Window):
 
         self.gatherer.request_feeds()
 
-    def get_good_default_size(self):
+    def set_good_default_size(self):
         screen = self.get_screen()
-        monitor = screen.get_monitor_at_window(screen.get_active_window())
-        geometry = screen.get_monitor_geometry(monitor)
-        width = floor(.60*geometry.width)
-        height = floor(.75*geometry.height)
-
-        return width, height
+        active_window = screen.get_active_window()
+        if active_window:
+            monitor = screen.get_monitor_at_window(active_window)
+            geometry = screen.get_monitor_geometry(monitor)
+            width = floor(.60*geometry.width)
+            height = floor(.75*geometry.height)
+            self.set_default_size(width, height)
+        else:  # Just guess
+            self.set_default_size(600, 800)
+        self.set_size_request(100, 100)  # Minimum size, to prevent fading to nothing
 
     def set_window_icon(self):
         """
@@ -91,6 +95,9 @@ class MainWindow(Gtk.Window):
             self.current_view.populate(self.preferences.feed_list())
             self.add(self.current_view.top_level())
             self.show_all()
+
+            # Workaround, silences GTK warning 'without calling gtk_widget_get_preferred_width/height().' PyGObject bug?
+            self.get_preferred_size()
 
         return self.current_view
 

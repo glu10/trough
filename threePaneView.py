@@ -26,7 +26,8 @@ class ThreePaneView(TwoPaneView):
         Panes 2-3 are TwoPaneView, slightly modified through overridden functions. """
     def __init__(self, preferences, gatherer):
         self.label_store = Gtk.ListStore(str)
-        self.label_view = self.create_view(self.label_store, 'Feed', text=0)
+        self.label_view = self.create_view(self.label_store, 'Feeds', text=0)
+        self.label_view.set_name('labelview')  # For CSS
         self.label_scroll = self.create_headline_box(self.label_view, 20, 200)
         self.label_changed_handler = None
         self.toggle_label_listening()
@@ -49,7 +50,7 @@ class ThreePaneView(TwoPaneView):
 
     @staticmethod
     def create_headline_view(store):
-        return ThreePaneView.create_view(store, 'Headline', text=0, foreground_rgba=2)
+        return ThreePaneView.create_view(store, 'Headlines', text=0, foreground_rgba=2)
 
     @staticmethod
     def create_headline_store():
@@ -103,7 +104,6 @@ class ThreePaneView(TwoPaneView):
             self.label_store.append([feed.name])
 
     def update_appearance(self, appearance_dict):
-
         # Delete old feeds that got removed
         feed_model = self.label_view.get_model()
         for it in feed_model:
