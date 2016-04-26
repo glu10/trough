@@ -73,4 +73,4 @@ custom_scraping_rules = {
 }
 
 # Transforms the dictionary into a key/value list and sorts it by regular expression length (longest to shortest)
-ordered_rules = sorted(custom_scraping_rules.items(), key=lambda x: len(x[0]))
+ordered_rules = sorted(custom_scraping_rules.items(), key=lambda x: -len(x[0]))
