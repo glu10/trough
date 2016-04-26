@@ -105,4 +105,4 @@ rules = {r'abcnews\.go\.com': abc_news,
          }
 
 # Transforms the dictionary into a key/value list and sorts it by regular expression length (longest to shortest)
-ordered_rules = sorted(rules.items(), key=lambda x: len(x[0]))  # The object required by a RuleResolver
+ordered_rules = sorted(rules.items(), key=lambda x: -len(x[0]))  # The object required by a RuleResolver
