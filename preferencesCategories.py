@@ -19,12 +19,14 @@
 """
 
 from abc import ABCMeta, abstractmethod
-from gi.repository import Gtk, Gdk, Gio
-from feedDialog import FeedDialog
-import utilityFunctions
-from preferences import Preferences
+
+from gi.repository import Gdk, Gio, Gtk
+
 from feed import Feed
-from filter import Filter
+from feedDialog import FeedDialog
+from item_filter import ItemFilter
+from preferences import Preferences
+import utilityFunctions
 
 
 class PreferencesCategory(metaclass=ABCMeta):
@@ -130,11 +132,9 @@ class AppearancePreferences(PreferencesCategory):
         view_vbox = self.create_section('View', self.create_section_options([''], [self.view_box]))
         top_vbox.add(view_vbox)
 
-
         # Font selection
         font_section = self.create_section('Fonts', self.create_section_options(self.font_idents, self.font_buttons))
         top_vbox.add(font_section)
-
 
         # Font Colors
         color_section = self.create_section('Colors', self.create_section_options(self.color_idents, self.color_buttons))
@@ -181,7 +181,7 @@ class AppearancePreferences(PreferencesCategory):
 
     def confirm_and_reset_defaults(self, widget):
         if utilityFunctions.decision_popup(self.parent, 'Reset appearance to defaults?',
-                          'Are you sure you want to reset your appearance preferences to default values?'):
+           'Are you sure you want to reset your appearance preferences to default values?'):
             self.choices = Preferences.default_appearance_preferences()
 
             # Visual Effects
@@ -208,6 +208,7 @@ class FeedsPreferences(PreferencesCategory):
     def __init__(self, parent, preferences, cache):
         super().__init__(preferences, 'Feeds')
         self.parent = parent
+        self.preferences = preferences
         self.info_box, self.info_scroll = self.info_placeholder()
         self.feed_list = Gtk.ListStore(str, str)
         self.view = Gtk.TreeView(model=self.feed_list)
@@ -348,15 +349,15 @@ class FeedsPreferences(PreferencesCategory):
         """
         Note: This only adds the feed to the temporary feed list in the preferences window.
         """
-        dialog = FeedDialog(self.parent)
-        response = dialog.get_response(self.feed_list)
+        dialog = FeedDialog(self.parent, self.feed_list, None, self.preferences.categories())
+        response = dialog.get_response()
         if response:
             if response.overwrite:  # Are we replacing a different feed with this one because conflicting name/URI?
                 for i, feed in enumerate(self.feed_list):
-                    if response.name == feed[0]:
+                    if response.feed.name == feed[0]:
                         self.feed_list.remove(self.feed_list.get_iter(i))
                         break
-            iter = self.feed_list.append([response.name, response.uri])
+            iter = self.feed_list.append(response.feed.to_value_list())
             self.view.get_selection().select_iter(iter)  # Selects the feed just added.
 
     def edit_feed(self, widget):
@@ -367,9 +368,9 @@ class FeedsPreferences(PreferencesCategory):
             name = model[iter][0]
             uri = model[iter][1]
 
-            dialog = FeedDialog(self.parent, feed=Feed(name, uri))
+            dialog = FeedDialog(self.parent, feed_container=self.feed_list, feed=Feed(name, uri))
             dialog.set_title('Edit Feed')
-            response = dialog.get_response(self.feed_list)
+            response = dialog.get_response()
             if response:
                 model[iter][0] = response.name
                 model[iter][1] = response.uri

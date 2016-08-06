@@ -32,10 +32,10 @@ class PreferencesWindow(Gtk.Dialog):
         self.set_default_size(300, 300)
 
         self.preferences_categories = [
-                                       AppearancePreferences(self, self.preferences),
-                                       FeedsPreferences(self, self.preferences, cache),
-                                       FiltrationPreferences(self, self.preferences),
-                                      ]
+            AppearancePreferences(self, self.preferences),
+            FeedsPreferences(self, self.preferences, cache),
+            FiltrationPreferences(self, self.preferences),
+        ]
 
         self.notebook = Gtk.Notebook()
         for category in self.preferences_categories:

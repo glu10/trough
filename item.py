@@ -18,6 +18,7 @@
     Trough homepage: https://github.com/glu10/trough
 """
 from threading import Lock
+
 from utilityFunctions import string_to_RGBA
 
 

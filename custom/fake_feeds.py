@@ -88,8 +88,8 @@ def hacker_news_comment_pages(label, job):
     return items
 
 rules = {
-    'HN': hacker_news_stories,
-    'YTM': youtube_mashup,
-    'HNC': hacker_news_comment_pages,
-}
+          'HN': hacker_news_stories,
+          'YTM': youtube_mashup,
+          'HNC': hacker_news_comment_pages,
+        }
 

@@ -18,8 +18,8 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-from gi.repository import Gtk, Gdk
-from gi.repository import Pango
+from gi.repository import Gdk, Gtk, Pango
+
 from newsView import NewsView
 from textFormat import TextFormat
 from utilityFunctions import string_to_RGBA

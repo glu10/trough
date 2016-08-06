@@ -17,7 +17,7 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
-from gi.repository import Gtk, Gdk, Pango
+from gi.repository import Gdk, Gtk, Pango
 
 
 class TextFormat:

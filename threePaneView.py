@@ -17,7 +17,9 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
-from gi.repository import Gtk, Gdk
+
+from gi.repository import Gdk, Gtk 
+
 from twoPaneView import TwoPaneView
 
 

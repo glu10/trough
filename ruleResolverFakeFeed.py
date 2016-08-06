@@ -17,8 +17,10 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
-from ruleResolver import RuleResolver
+
 from inspect import signature
+
+from ruleResolver import RuleResolver
 
 
 class FakeFeedResolver(RuleResolver):

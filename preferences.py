@@ -18,11 +18,13 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-import os
-from gi.repository import Gtk, Gio
-from feed import Feed
-from filter import Filter
 import copy
+import os
+
+from gi.repository import Gio, Gtk 
+
+from feed import Feed
+from item_filter import ItemFilter
 from utilityFunctions import load_file, write_file
 
 
@@ -40,38 +42,35 @@ class Preferences:
 
     @staticmethod
     def default_preferences():
-        preferences = dict()
-        preferences['Appearance'] = Preferences.default_appearance_preferences()
-        preferences['Feeds'] = Preferences.default_feeds_preferences()
-        preferences['Filters'] = Preferences.default_filtration_preferences()
+        preferences = {
+            'Appearance': Preferences.default_appearance_preferences(),
+            'Feeds': Preferences.default_feeds_preferences(),
+            'Filters': Preferences.default_filtration_preferences(),
+        }
         return preferences
 
     @staticmethod
     def default_appearance_preferences():
-        p = dict()
-        p['View'] = 'Three-Pane'
-
-        # TODO: Investigate if these font strings are reliably set among different DEs/WMs
         gs = Gio.Settings('org.gnome.desktop.interface')
         default_font = gs.get_string('font-name')
         document_font = gs.get_string('document-font-name')
-
-        # Helps if one is set but not the other.
         if not default_font and document_font:
             default_font = document_font
         elif not document_font and default_font:
             document_font = default_font
 
-        p['Category Font'] = default_font
-        p['Headline Font'] = default_font
-        p['Story Font'] = document_font
-
-        p['Font Color'] = 'rgba(0, 0, 0, 1.0)'  # solid black
-        p['Background Color'] = 'rgba(255, 255, 255, 1.0)'  # solid white
-        p['Selection Font Color'] = 'rgba(255, 255, 255, 1.0)'  # solid white
-        p['Selection Background Color'] = 'rgba(81, 126, 173, 1.0)'  # medium-dark blue
-        p['Read Color'] = 'rgba(117, 80, 123, 1.0)'  # a 'clicked-link' purple.
-        p['Filtered Color'] = 'rgba(192, 47, 29, 1.0)'  # a dull uninviting red
+        p = {
+            'View': 'Three-Pane',
+            'Category Font': default_font,
+            'Headline Font': default_font,
+            'Story Font': document_font,
+            'Font Color': 'rgba(0, 0, 0, 1.0)',  # solid black
+            'Background Color': 'rgba(255, 255, 255, 1.0)',  # solid white
+            'Selection Font Color': 'rgba(255, 255, 255, 1.0)',  # solid white
+            'Selection Background Color': 'rgba(81, 126, 173, 1.0)',  # medium-dark blue
+            'Read Color': 'rgba(117, 80, 123, 1.0)',  # a 'clicked-link' purple
+            'Filtered Color': 'rgba(192, 47, 29, 1.0)',  # a dull uninviting red
+        }
         return p
 
     @staticmethod
@@ -95,7 +94,7 @@ class Preferences:
         self.preferences = load_file(self.preferences_directory, self.preferences_file, self.preferences)
 
         if self.preferences['Feeds'] is None:
-            self.preferences['Feeds'] = dict()
+            self.preferences['Feeds'] = self.default_feeds_preferences()
         else:
             # Since we used JSON and not pickling, need to transform the serialized feed information into Feed objects
             feed_object_dict = dict()
@@ -104,7 +103,7 @@ class Preferences:
             self.preferences['Feeds'] = feed_object_dict
 
         if self.preferences['Filters'] is None:
-            self.preferences['Filters'] = list()
+            self.preferences['Filters'] = self.default_filtration_preferences()
         else:
             filter_objects = list()
             for filt, case_sensitive, hide_matches in self.preferences['Filters']:
@@ -125,6 +124,15 @@ class Preferences:
             return self.feeds()[name]
         else:
             return None
+
+    def categories(self):
+        # Reconstruct category list from the current feeds
+        categories = set()
+        for feed in self.feed_list():
+            categories.add(feed.category)
+        category_list = list(categories)
+        category_list.sort()  # Possible idea: Alternatively, could try to put most used category up top
+        return category_list
 
     def add_feed(self, name, uri):
         self.preferences['Feeds'][name] = Feed(name, uri)
@@ -155,40 +163,40 @@ class Preferences:
     def get_appearance_css(self):
         ap = self.appearance_preferences()
         if Gtk.get_major_version() == 3 and Gtk.get_minor_version() >= 20:  # GTK 3.20 broke previous CSS
-             p = (
-                 '#storyview text, #labelview, #headlineview{\n'
-                 '   background-color: ' + ap['Background Color'] + ';\n'
-                 '   color: ' + ap['Font Color'] + ';\n'
-                 '}\n'
-                 '* + #labelview, * + #headlineview{\n'
-                 '   background-color: ' + ap['Background Color'] + ';\n'
-                 '}\n'
-                 '#storyview selection, #labelview:selected, #headlineview:selected{\n'
-                 '    background-color: ' + ap['Selection Background Color'] + ';\n'
-                 '    color: ' + ap['Selection Font Color'] + ';\n'
-                 '}\n'
-                 '#storyview {'
-                 '    font: ' + ap['Story Font'] + ';\n'
-                 '}\n'
-                 '#headlineview {\n'
-                 '    font: ' + ap['Headline Font'] + ';\n'
-                 '}\n'
-                )
+            css = (
+                '#storyview text, #labelview, #headlineview{\n'
+                '   background-color: ' + ap['Background Color'] + ';\n'
+                '   color: ' + ap['Font Color'] + ';\n'
+                '}\n'
+                '* + #labelview, * + #headlineview{\n'
+                '   background-color: ' + ap['Background Color'] + ';\n'
+                '}\n'
+                '#storyview selection, #labelview:selected, #headlineview:selected{\n'
+                '    background-color: ' + ap['Selection Background Color'] + ';\n'
+                '    color: ' + ap['Selection Font Color'] + ';\n'
+                '}\n'
+                '#storyview {'
+                '    font: ' + ap['Story Font'] + ';\n'
+                '}\n'
+                '#headlineview {\n'
+                '    font: ' + ap['Headline Font'] + ';\n'
+                '}\n'
+            )
         else:
-             p = (
-                 '#storyview, #labelview, #headlineview {\n'
-                 '   background-color: ' + ap['Background Color'] + ';\n'
-                 '   color: ' + ap['Font Color'] + ';\n'
-                 '}\n'
-                 '#storyview:selected, #labelview:selected, #headlineview:selected {\n'
-                 '    background-color: ' + ap['Selection Background Color'] + ';\n'
-                 '    color: ' + ap['Selection Font Color'] + ';\n'
-                 '}\n'
-                 '#storyview {'
-                 '    font: ' + ap['Story Font'] + ';\n'
-                 '}\n'
-                 '#headlineview {\n'
-                 '    font: ' + ap['Headline Font'] + ';\n'
-                 '}\n'
-             )
-        return p.encode()
+            css = (
+                '#storyview, #labelview, #headlineview {\n'
+                '   background-color: ' + ap['Background Color'] + ';\n'
+                '   color: ' + ap['Font Color'] + ';\n'
+                '}\n'
+                '#storyview:selected, #labelview:selected, #headlineview:selected {\n'
+                '    background-color: ' + ap['Selection Background Color'] + ';\n'
+                '    color: ' + ap['Selection Font Color'] + ';\n'
+                '}\n'
+                '#storyview {'
+                '    font: ' + ap['Story Font'] + ';\n'
+                '}\n'
+                '#headlineview {\n'
+                '    font: ' + ap['Headline Font'] + ';\n'
+                '}\n'
+            )
+        return css.encode()

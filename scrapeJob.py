@@ -19,6 +19,7 @@
 """
 
 from collections import deque
+
 from bs4 import BeautifulSoup
 
 

@@ -18,21 +18,20 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-import requests
-import re
-import utilityFunctions
-from item import Item
-from feed import Feed
 from collections import defaultdict
-from scrapeJob import ScrapeJob
-from cache import Cache
-from ruleResolverFakeFeed import FakeFeedResolver
-from ruleResolverScraping import WrappedScrapeResolver
-
-# Threading imports
+import re
 from threading import Thread
 from queue import Queue, Empty
+
 from gi.repository import Gdk
+import requests
+
+from feed import Feed
+from item import Item
+from ruleResolverFakeFeed import FakeFeedResolver
+from ruleResolverScraping import WrappedScrapeResolver
+from scrapeJob import ScrapeJob
+import utilityFunctions
 
 
 class Gatherer:

@@ -18,11 +18,10 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-from threading import RLock
-from utilityFunctions import load_file, write_file
 import os
 
-# TODO A design change now causes bursty sets of only reads, a reader/writer lock would be really beneficial now
+from threading import RLock
+from utilityFunctions import load_file, write_file
 
 
 def synchronize_cache(func):

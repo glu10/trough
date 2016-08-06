@@ -20,14 +20,14 @@
 
 """
 This file contains functions that are used in multiple places within Trough that have a similar purpose.
-The functions are being declared here for consistency's sake.
 """
 
-import feedparser
-from gi.repository import Gtk, Gdk, Gio
 import os
 import json
 import errno
+
+import feedparser
+from gi.repository import Gdk, Gio, Gtk
 
 def feedparser_parse(uri):
     """

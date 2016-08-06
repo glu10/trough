@@ -17,31 +17,36 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
+
 from threading import Lock
 
 
 class Feed:
     """ An RSS Feed, contains RSS Items """
 
-    def __init__(self, name, uri, category=None, refresh_limit=None):
+    def __init__(self, name, uri, category="Uncategorized", refresh_limit=None):
         self.name = name  # Externally enforced as unique
         self.uri = uri
         self.items = list()
         self.lock = Lock()  # for preventing multiple requests
-
-        # TO BE IMPLEMENTED:
-        #self.category = category
-        #self.refresh_limit = refresh_limit  # ms
+        self.category = category
 
     @staticmethod
     def from_dict(attribute_dict):
-        attributes = ['name', 'uri']
+        """ Deserialization """
+        attributes = ['name', 'uri', 'category']
         for attribute in attributes:
             if attribute not in attribute_dict:
                 raise RuntimeError('A Feed Object could not be deserialized correctly, ' + attribute +
                                    ' was not present in the dictionary ' + str(attribute_dict))
+        return Feed(*[attribute_dict[attribute] for attribute in attributes])
 
-        return Feed(attribute_dict['name'], attribute_dict['uri'])
+    def to_dict(self):
+        """ Serialization """
+        return {'name': self.name, 'uri': self.uri, 'category': self.category}
+
+    def to_value_list(self):
+        return [self.name, self.uri, self.category]
 
     def sort_items(self):
         """ Bucket sort with 3 buckets. """
@@ -55,11 +60,6 @@ class Feed:
                 for item in bucket:
                     self.items[i] = item
                     i += 1
-
-
-    def to_dict(self):
-        # Can't just use __dict__ because the items list is going to be excluded
-        return {'name': self.name, 'uri': self.uri}
 
     def is_fake(self):
         return not self.uri

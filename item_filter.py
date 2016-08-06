@@ -21,7 +21,7 @@
 import re
 
 
-class Filter:
+class ItemFilter:
 
     def __init__(self, filt, case_sensitive, hide_matches):
         self.filter = filt

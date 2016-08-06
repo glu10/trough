@@ -14,22 +14,26 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-from gi.repository import Gtk, Gio, Gdk, GLib, GObject
-from feedDialog import FeedDialog
-from preferences import Preferences
-from twoPaneView import TwoPaneView
-from threePaneView import ThreePaneView
+from math import floor
+
+from gi.repository import Gdk, Gio, GLib, GObject, Gtk
+
 from gatherer import Gatherer
+from feedDialog import FeedDialog
+from threePaneView import ThreePaneView
+from twoPaneView import TwoPaneView
+from preferences import Preferences
 from preferencesWindow import PreferencesWindow
 from utilityFunctions import make_button
-from math import floor
 
 
 class MainWindow(Gtk.Window):
 
     # __gsignals__ is used to register the names of custom signals
-    __gsignals__ = {'item_scraped_event': (GObject.SIGNAL_RUN_FIRST, None, ()),
-                    'feed_gathered_event': (GObject.SIGNAL_RUN_FIRST, None, ())}
+    __gsignals__ = {
+        'item_scraped_event': (GObject.SIGNAL_RUN_FIRST, None, ()),
+        'feed_gathered_event': (GObject.SIGNAL_RUN_FIRST, None, ())
+    }
     __gtype_name__ = 'TroughWindow'
 
     def __init__(self, preferences, cache, **kwargs):
@@ -137,8 +141,8 @@ class MainWindow(Gtk.Window):
         return refresh_button
 
     def on_add_clicked(self, widget=None):
-        dialog = FeedDialog(self)
-        response = dialog.get_response(self.preferences.feeds())
+        dialog = FeedDialog(self, self.preferences.feeds(), None, self.preferences.categories())
+        response = dialog.get_response()
 
         if response:
             self.preferences.add_feed(response.name, response.uri)

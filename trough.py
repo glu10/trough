@@ -15,14 +15,16 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-import gi
-gi.require_version('Gtk', '3.0')
 import sys
 import signal
-from gi.repository import Gtk, Gdk, Gio, GLib
+
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gdk, Gio, GLib, Gtk 
+
+from cache import Cache
 from mainWindow import MainWindow
 from preferences import Preferences
-from cache import Cache
 
 
 class Trough(Gtk.Application):

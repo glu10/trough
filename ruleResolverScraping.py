@@ -18,9 +18,10 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-import re
-from ruleResolver import RuleResolver
 from inspect import signature
+import re
+
+from ruleResolver import RuleResolver
 
 
 class WrappedScrapeResolver(RuleResolver):

@@ -17,6 +17,7 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
+
 from abc import ABCMeta, abstractmethod
 import importlib
 

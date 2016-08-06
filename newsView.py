@@ -20,6 +20,7 @@
 
 from abc import ABCMeta, abstractmethod
 from webbrowser import open_new_tab
+
 from textFormat import TextFormat
 
 
