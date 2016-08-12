@@ -18,6 +18,9 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
+
+from abc import ABCMeta, abstractmethod
+
 from gi.repository import Gtk
 
 import utilityFunctions
@@ -25,7 +28,89 @@ import utilityFunctions
 
 class FeedDialog(Gtk.Dialog):
     """ A Dialog for adding or editing information related to an RSS feed. """
+
+    def __init__(self, preferences, feed_container, feed_container):
+        Gtk.Dialog.__init__(self, 'Add Feed', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                                                          Gtk.STOCK_OK, Gtk.ResponseType.OK))
+         
+        self.set_default_size(150, 100)
+        grid = Gtk.Grid(orientation=Gtk.Orientation.VERTICAL)
+
+        feed_row = FeedDialogRow(grid, 'Name of Feed', Gtk.Entry(hexexpand=True))
+        feed_row.set_preexisting_feeds(feed_container)
+        uri_row = UriDialogRow(grid, 'URI', Gtk.Entry(hexexpand=True))
+        category_row = DialogRow(grid, 'Categories', None)
+        self.rows = [feed_row, uri_row, category_row]
+        
+        self.error_label = Gtk.Label('')
+        self.error_label.set_markup('<span color="red">Fill in the missing information.</span>')
+
+        self.error_label.hide() # hidden initially, only shown if information is incomplete
+        pass
+    
+    def run(self):
+        pass
+
+    def verify(self):
+        correct = True
+        for row in self.rows:
+            if row.verify():
+                row.mark_red(False)
+            else:
+                row.mark_red(True)
+                correct = False
+        return correct
+
+
+class DialogRow:
+    def __init__(self, grid, label_text, interactive_element):
+        self.label = Gtk.Label(label_text, xalign=0)
+        self.interactive = interactive
+        grid.add(self.label)
+        grid.attach_next_to(interactive, self.label, Gtk.PositionType.RIGHT, 1, 1)
+
+    def fill_in(self):
+        pass
+
+    def verify():
+        return True  # vacuously true
+
+    def mark_red(self, b):
+        if b:
+            self.label.set_markup('<span color="red">' + self.label.get_text() + '</span>')
+        else:
+            self.label.set_text(self.label.get_text())  # Make label text normal (non-red)
+
+    def fade(self, b):
+        self.label.set_sensitive(b)
+        self.interactive.set_sensitive(b)
+
+class FeedDialogRow(DialogRow):
+
+    def set_preexisting_feeds(self, container):
+        if container == Gtk.ListStore:
+            container = {row[0] for row in feed_container}
+        self.preexisting = container
+        return self
+        
+    def verify(self):
+       feed_name = self.interactive.get_text()
+       return feed_name and feed_name not in preexisting
+    
+class UriDialogRow(DialogRow):
+    def verify(self):
+        if not (uri.startswith('/') or uri.startswith('http://') or uri.startswith('https://')):
+                uri = 'http://' + uri
+        content = utilityFunctions.feedparser_parse(uri)  # Probe the URI
+        return bool(content)
+         
     def __init__(self, parent, feed_container, feed=None, categories=None):
+        """
+        parent: caller
+        feed_container: check if a feed already exists
+        feed: are we filling out a feeds current information?
+        categories: what categories exist?
+        """
         Gtk.Dialog.__init__(self, 'Add Feed', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                                           Gtk.STOCK_OK, Gtk.ResponseType.OK))
         self.feed = feed
