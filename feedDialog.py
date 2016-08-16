@@ -1,7 +1,7 @@
 """
     Trough - a GTK+ RSS news reader
 
-    Copyright (C) 2015 Andrew Asp
+    Copyright (C) 2016 Andrew Asp
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -19,271 +19,158 @@
 """
 
 
-from abc import ABCMeta, abstractmethod
-
 from gi.repository import Gtk
 
+from feed import Feed
 import utilityFunctions
 
 
 class FeedDialog(Gtk.Dialog):
     """ A Dialog for adding or editing information related to an RSS feed. """
 
-    def __init__(self, preferences, feed_container, feed_container):
+    def __init__(self, parent, feed_container, feed=None):
         Gtk.Dialog.__init__(self, 'Add Feed', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                                          Gtk.STOCK_OK, Gtk.ResponseType.OK))
-         
+                            Gtk.STOCK_OK, Gtk.ResponseType.OK))
         self.set_default_size(150, 100)
-        grid = Gtk.Grid(orientation=Gtk.Orientation.VERTICAL)
+        ok_button = self.get_widget_for_response(response_id=Gtk.ResponseType.OK)
+        ok_button.set_can_default(True)
+        ok_button.grab_default()
 
-        feed_row = FeedDialogRow(grid, 'Name of Feed', Gtk.Entry(hexexpand=True))
+        self.connect('response', self.on_dialog_response)
+        num_columns = 3
+        grid = Gtk.Grid(orientation=Gtk.Orientation.VERTICAL, column_spacing=num_columns)
+        feed_row = FeedDialogRow(grid, 'Name of Feed', Gtk.Entry(hexpand=True))
         feed_row.set_preexisting_feeds(feed_container)
-        uri_row = UriDialogRow(grid, 'URI', Gtk.Entry(hexexpand=True))
-        category_row = DialogRow(grid, 'Categories', None)
-        self.rows = [feed_row, uri_row, category_row]
-        
+        uri_row = UriDialogRow(grid, 'URI', Gtk.Entry(hexpand=True))
+        self.rows = [feed_row, uri_row]
+
+        if feed is not None:  # A feed was passed in, populate the rows with the feed information.
+            self.set_title('Edit Feed')
+            for row in self.rows:
+                row.fill_in(feed)
+
         self.error_label = Gtk.Label('')
         self.error_label.set_markup('<span color="red">Fill in the missing information.</span>')
+        grid.attach(self.error_label, 0, len(self.rows)+1, num_columns , 1)
 
+        box = self.get_content_area()
+        box.add(grid)
+        box.show_all()
         self.error_label.hide() # hidden initially, only shown if information is incomplete
-        pass
-    
-    def run(self):
-        pass
+
+    def get_response(self):
+        """ Primary external call. Returns a valid Feed object upon success or None otherwise. """
+        ret = None
+        if self.run() == Gtk.ResponseType.OK:
+            ret = Feed(*(row.retrieve() for row in self.rows)) # Construct a feed object.
+        self.destroy()
+        return ret
+
+    def on_dialog_response(self, parent, response):
+        if response == Gtk.ResponseType.OK and not self.verify():
+            self.emit_stop_by_name('response') # stops the signal from  exiting the run() loop
 
     def verify(self):
+        """ Checks each row for correctness. Issues a warning to the user if correctness is conditional. """
         correct = True
+        warning_list = list()
         for row in self.rows:
-            if row.verify():
+            if row.verify(warning_list):
                 row.mark_red(False)
             else:
                 row.mark_red(True)
                 correct = False
+
+        if not correct:
+            self.error_label.show()
+        elif warning_list:  # The information may be valid depending on the user's wishes, prompt them.
+            self.error_label.hide()
+            return self.warn(warning_list)
         return correct
+
+    def warn(self, warning_list):
+        warning_list.append('Add feed anyway?')
+        decision = utilityFunctions.decision_popup(self, 'Warning!', '\n'.join(warning_list))
+        warning_list.clear()
+        return decision
+
 
 
 class DialogRow:
     def __init__(self, grid, label_text, interactive_element):
         self.label = Gtk.Label(label_text, xalign=0)
-        self.interactive = interactive
+        self.interactive = interactive_element
+        self.interactive.set_activates_default(True)
         grid.add(self.label)
-        grid.attach_next_to(interactive, self.label, Gtk.PositionType.RIGHT, 1, 1)
+        grid.attach_next_to(self.interactive, self.label, Gtk.PositionType.RIGHT, 1, 1)
 
-    def fill_in(self):
+    def fill_in(self, feed):
+        """ Set known information for the interactive element. """
         pass
 
-    def verify():
-        return True  # vacuously true
-
     def mark_red(self, b):
+        """ Color/uncolor the label of this row to be red for error indication. """
         if b:
             self.label.set_markup('<span color="red">' + self.label.get_text() + '</span>')
         else:
             self.label.set_text(self.label.get_text())  # Make label text normal (non-red)
 
-    def fade(self, b):
-        self.label.set_sensitive(b)
-        self.interactive.set_sensitive(b)
+    def retrieve(self):
+        """ Get the relevant information from the interactive element. """
+        pass
+
+    def verify(self, warning_list):
+        """ Is the information in the interactive element correct? If conditional, append a warning. """
+        return True  # vacuously true
 
 class FeedDialogRow(DialogRow):
+    """ GUI element for naming an RSS feed. """
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.preexisting = None  # Feeds that already exist (for enforcing uniqueness)
+        self.filled_in_name = None  # If a feed name was filled in, it has to be remembered to prevent erroneously flagging it as not unique.
+
+    def fill_in(self, feed):
+        self.filled_in_name = feed.name
+        self.interactive.set_text(self.filled_in_name)
+
+    def retrieve(self):
+        return self.interactive.get_text()
 
     def set_preexisting_feeds(self, container):
-        if container == Gtk.ListStore:
-            container = {row[0] for row in feed_container}
+        """If container is not a set/dictionary, make it one for O(1) existance checking. """
+        if isinstance(container, Gtk.ListStore):
+            container = {row[0] for row in container}
         self.preexisting = container
         return self
-        
-    def verify(self):
-       feed_name = self.interactive.get_text()
-       return feed_name and feed_name not in preexisting
-    
+
+    def verify(self, warning_list):
+       feed_name = self.retrieve()
+       if not feed_name:
+           return False  # A blank feed name is always incorrect
+       elif feed_name != self.filled_in_name and feed_name in self.preexisting:
+            warning.append('The feed name ' + feed_name + ' already exists and will be overwritten.')
+       return True
+
+
 class UriDialogRow(DialogRow):
-    def verify(self):
-        if not (uri.startswith('/') or uri.startswith('http://') or uri.startswith('https://')):
-                uri = 'http://' + uri
+    """ GUI element for entering an RSS feed's URI. """
+
+    def fill_in(self, feed):
+        self.interactive.set_text(feed.uri)
+
+    def retrieve(self):
+        return self.interactive.get_text()
+
+    def verify(self, warning_list):
+        uri = self.retrieve()
+        if not uri:
+            return False  # A blank URI is always incorrect
+        elif not (uri.startswith('/') or uri.startswith('http://') or uri.startswith('https://')):
+                uri = 'http://' + uri  # Attempt to complete the URI #TODO: Instead of preemptively trying to fix it, probe it as is first.
         content = utilityFunctions.feedparser_parse(uri)  # Probe the URI
-        return bool(content)
-         
-    def __init__(self, parent, feed_container, feed=None, categories=None):
-        """
-        parent: caller
-        feed_container: check if a feed already exists
-        feed: are we filling out a feeds current information?
-        categories: what categories exist?
-        """
-        Gtk.Dialog.__init__(self, 'Add Feed', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                                          Gtk.STOCK_OK, Gtk.ResponseType.OK))
-        self.feed = feed
-        self.feed_container = feed_container
-        self.missing_information = False  # Used for error display logic.
-        self.set_default_size(150, 100)
+        if not content:
+            warning_list.append('The URI ' + uri + ' did not contain a valid RSS feed.')
+        return True
 
-        grid = Gtk.Grid(column_spacing=3, row_spacing=3, orientation=Gtk.Orientation.VERTICAL)
-
-        # Widgets
-        self.name_label, self.name_entry = self.add_labeled_entry('Name of Feed', grid)
-        self.fake_feed_check_button = self.add_labeled_check_button('Fake Feed', '(leave unchecked if unsure)',
-                                                                    self.on_fake_feed_toggled, grid)
-        self.uri_label, self.uri_entry = self.add_labeled_entry('URI', grid)
-
-        self.category_label = Gtk.Label("Category", xalign=0)
-        self.category_combo = Gtk.ComboBoxText.new_with_entry()
-        for category in categories:
-            self.category_combo.append_text(category)
-        grid.add(self.category_label)
-        grid.attach_next_to(self.category_combo, self.category_label, Gtk.PositionType.RIGHT, 1, 1)
-
-        self.error_label = Gtk.Label()
-        self.error_label.set_markup('<span color="red">Fill in the missing information.</span>')
-        grid.attach(self.error_label, 1, 4, 4, 1)
-
-        # Make the ok_button the default so it can be triggered by the enter key.
-        ok_button = self.get_widget_for_response(response_id=Gtk.ResponseType.OK)
-        ok_button.set_can_default(True)
-        ok_button.grab_default()
-
-        # When an enter key is pressed on an entry, activate the okay button.
-        self.name_entry.set_activates_default(True)
-        self.uri_entry.set_activates_default(True)
-
-        if self.feed:  # If a feed was passed in
-            self.fill_in_feed_information(self.feed)
-
-        box = self.get_content_area()
-        box.add(grid)
-        self.show_all()
-        self.error_label.hide()  # The error label is only shown if the information entered isn't complete.
-
-    @staticmethod
-    def add_labeled_entry(text, grid):
-        label = Gtk.Label(text, xalign=0)
-        entry = Gtk.Entry(hexpand=True)
-        grid.add(label)
-        grid.attach_next_to(entry, label, Gtk.PositionType.RIGHT, 1, 1)
-        return label, entry
-
-    @staticmethod
-    def add_labeled_check_button(before_check_text, after_check_text, function, grid):
-        label = Gtk.Label(before_check_text, xalign=0)
-        grid.add(label)
-        type_button = Gtk.CheckButton(after_check_text)
-        type_button.connect('toggled', function)
-        grid.attach_next_to(type_button, label, Gtk.PositionType.RIGHT, 1, 1)
-        return type_button
-
-    def fill_in_feed_information(self, feed):
-        """ Used when a feed is going to be edited. Pre-existing feed information gets pre-filled here. """
-        self.name_entry.set_text(feed.name)
-        if feed.is_fake():
-            self.fake_feed_check_button.set_active(True)  # Behaves as if the user checked the box.
-        else:
-            self.uri_entry.set_text(feed.uri)
-
-    def on_fake_feed_toggled(self, button):
-        """ If fake feed is checked, the URI label/entry is not needed. """
-        checked = button.get_active()
-        if checked:
-            self.uri_entry.set_text('')
-            self.uri_label.set_text(self.uri_label.get_text())  # Disables markup (workaround)
-        elif self.error_label.is_visible():  # Prevents losing the 'missing' status of the URI after unchecking.
-            self.switch_red_on_entry_label('', self.uri_label)
-
-        self.uri_label.set_sensitive(not checked)
-        self.uri_entry.set_sensitive(not checked)
-
-    def get_response(self):
-        """
-        :param feed_container: Must be a dict or Gtk.ListStore
-        :return: AddFeedResponse containing the feed information, or None if the process was abandoned by the user.
-        """
-        # TODO: Fix this hacky function by creating a custom dialog with the OK button linked to a function that verifies info.
-        return_val = None
-        while True:
-            response = self.run()
-            if response == Gtk.ResponseType.OK:
-                return_val = self.verify_entries()
-                if return_val:
-                    break
-            elif response == Gtk.ResponseType.CANCEL or response == Gtk.ResponseType.NONE:
-                break
-        self.destroy()
-        return return_val
-
-    def verify_entries(self):
-        """
-        :return: AddFeedResponse containing the feed information, or None if the process was abandoned by the user.
-        """
-        name = self.name_entry.get_text()
-        name_warning = self.verify_name(name, self.feed_container)
-        name_already_existed = name_warning != ''
-
-        uri = self.uri_entry.get_text()
-        uri, uri_warning = self.verify_uri(uri)
-
-        # if self.category_combo.has_entry()
-        category = self.verify_category()
-
-        if self.missing_information:
-            self.error_label.show()
-            self.missing_information = False  # Reset for next check
-        else:
-            self.error_label.hide()
-            no_warnings = name_warning == '' and uri_warning == ''
-
-            if no_warnings:
-                return FeedDialogResponse(name, uri, False)
-
-            warning_string = '\n'.join(filter(None, [name_warning, uri_warning, '\nAdd feed anyway?']))
-            if utilityFunctions.decision_popup(self, 'Warning!', warning_string):
-                return FeedDialogResponse(name, uri, name_already_existed)  # User chose to add feed despite warnings.
-            else:
-                return None  # User chose not to add the feed.
-
-    def switch_red_on_entry_label(self, entry_text, label):
-        if entry_text == '':  # If the information corresponding to this label is missing (blank)
-            self.missing_information = True
-            label.set_markup('<span color="red">' + label.get_text() + '</span>')  # Make the label red
-        else:
-            label.set_text(label.get_text())  # Make the label normal (non-red)
-
-    def verify_name(self, name, feed_container):
-        self.switch_red_on_entry_label(name, self.name_label)
-        if not self.feed and self.check_existence(name, feed_container):
-            return 'A feed named \"' + name + '\" already exists. It will be overwritten.'
-        else:
-            return ''
-
-    def verify_uri(self, uri):
-        warning = ''
-        if not self.fake_feed_check_button.get_active():  # If not a fake feed (real feeds have URIs that matter)
-            self.switch_red_on_entry_label(uri, self.uri_label)
-
-            if not (uri.startswith('/') or uri.startswith('http://') or uri.startswith('https://')):
-                uri = 'http://' + uri
-
-            content = utilityFunctions.feedparser_parse(uri)  # Probe the URI
-            if not content:
-                warning = 'The URI ' + uri + ' returned no valid RSS items.'
-        return uri, warning
-
-    def verify_category(self):
-        text = self.category_combo.get_active_text().strip()
-        if text:
-            return text
-        else:
-            return 'Uncategorized'
-
-    @staticmethod
-    def check_existence(name, feed_container):
-        """ Prevents duplicate feeds with the same name """
-        if type(feed_container) == dict:
-            return name in feed_container
-        elif type(feed_container) == Gtk.ListStore:
-            for row in feed_container:
-                if row[0] == name:
-                    return True
-            return False
-        else:
-            raise RuntimeError('An invalid feed list container of type '
-                               + str(type(feed_container))
-                               + ' was passed to AddFeed.')

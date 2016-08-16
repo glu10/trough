@@ -349,33 +349,34 @@ class FeedsPreferences(PreferencesCategory):
         """
         Note: This only adds the feed to the temporary feed list in the preferences window.
         """
-        dialog = FeedDialog(self.parent, self.feed_list, None, self.preferences.categories())
-        response = dialog.get_response()
-        if response:
-            if response.overwrite:  # Are we replacing a different feed with this one because conflicting name/URI?
-                for i, feed in enumerate(self.feed_list):
-                    if response.feed.name == feed[0]:
-                        self.feed_list.remove(self.feed_list.get_iter(i))
-                        break
-            iter = self.feed_list.append(response.feed.to_value_list())
+        dialog = FeedDialog(self.parent, feed_container=self.feed_list)
+        feed = dialog.get_response()
+        if feed:
+            self.find_and_remove_feed(feed) # Prevents duplicate names
+            iter = self.feed_list.append(feed.to_value_list())
             self.view.get_selection().select_iter(iter)  # Selects the feed just added.
 
     def edit_feed(self, widget):
         selection = self.view.get_selection()
         model, iter = selection.get_selected()
         if iter:
-            """ Going to spawn an Add feed dialog, but with the current feed values pre-filled. """
+            """ Spawn a feed dialog, but with the current feed values pre-filled. """
             name = model[iter][0]
             uri = model[iter][1]
 
             dialog = FeedDialog(self.parent, feed_container=self.feed_list, feed=Feed(name, uri))
-            dialog.set_title('Edit Feed')
-            response = dialog.get_response()
-            if response:
-                model[iter][0] = response.name
-                model[iter][1] = response.uri
+            feed = dialog.get_response()
+            if feed:
+                model[iter][0] = feed.name
+                model[iter][1] = feed.uri
                 self.feed_selected(selection)
             return None
+
+    def find_and_remove_feed(self, feed):
+        for i, row in enumerate(self.feed_list):
+            if feed.name == row[0]:
+                self.feed_list.remove(self.feed_list.get_iter(i))
+                break
 
     @staticmethod
     def attempt_selection(selector, iter):
@@ -490,7 +491,7 @@ class FiltrationPreferences(PreferencesCategory):
             model.remove(iter)
 
     def gather_choices(self):
-        return [Filter(row[0], row[1], row[2]) for row in self.filter_list]
+        return [ItemFilter(row[0], row[1], row[2]) for row in self.filter_list]
 
 
 class FilterDialog(Gtk.Dialog):

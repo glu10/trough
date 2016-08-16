@@ -141,11 +141,11 @@ class MainWindow(Gtk.Window):
         return refresh_button
 
     def on_add_clicked(self, widget=None):
-        dialog = FeedDialog(self, self.preferences.feeds(), None, self.preferences.categories())
-        response = dialog.get_response()
+        dialog = FeedDialog(self, self.preferences.feeds())
+        feed = dialog.get_response()
 
-        if response:
-            self.preferences.add_feed(response.name, response.uri)
+        if feed:
+            self.preferences.add_feed(feed)
             self.on_refresh_clicked()  # Do a convenience refresh
 
     def on_preferences_clicked(self, widget=None):

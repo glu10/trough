@@ -35,6 +35,7 @@ class Preferences:
     def __init__(self, load_from_file=False):
         self.preferences_directory = os.path.join(os.path.expanduser('~'), '.config', 'trough')
         self.preferences_file = 'preferences.json'
+        # TODO: Make load_from_file completely independant of default_preferences.
         self.preferences = self.default_preferences()
 
         if load_from_file:
@@ -46,6 +47,7 @@ class Preferences:
             'Appearance': Preferences.default_appearance_preferences(),
             'Feeds': Preferences.default_feeds_preferences(),
             'Filters': Preferences.default_filtration_preferences(),
+            #'Categories': Preferences.default_categories_preferences(), 
         }
         return preferences
 
@@ -81,6 +83,10 @@ class Preferences:
     def default_filtration_preferences():
         return list()
 
+    @staticmethod
+    def default_categories_preferences():
+        return Gtk.ListStore()
+
     def appearance_preferences(self):
         return self.preferences['Appearance']
 
@@ -101,6 +107,7 @@ class Preferences:
             for feed_name, feed_attributes in self.preferences['Feeds'].items():
                 feed_object_dict[feed_name] = Feed.from_dict(feed_attributes)
             self.preferences['Feeds'] = feed_object_dict
+            #self.preferences['Categories'] = self.construct_categories()
 
         if self.preferences['Filters'] is None:
             self.preferences['Filters'] = self.default_filtration_preferences()
@@ -109,6 +116,9 @@ class Preferences:
             for filt, case_sensitive, hide_matches in self.preferences['Filters']:
                 filter_objects.append(Filter(filt, case_sensitive, hide_matches))
             self.preferences['Filters'] = filter_objects
+
+   # def categories(self):
+   #     return self.preferences['Categories']
 
     def feeds(self):
         return self.preferences['Feeds']
@@ -125,17 +135,18 @@ class Preferences:
         else:
             return None
 
-    def categories(self):
-        # Reconstruct category list from the current feeds
-        categories = set()
-        for feed in self.feed_list():
-            categories.add(feed.category)
-        category_list = list(categories)
-        category_list.sort()  # Possible idea: Alternatively, could try to put most used category up top
-        return category_list
+   # def construct_categories(self):
+   #     # Reconstruct category list from the current feeds
+   #     categories = {feed.category for feed in self.feed_list()}
+   #     categories.sort()
+   #
+   #     category_store = Gtk.ListStore()
+   #     for category in categories:
+   #         category_store.append(category)
+   #     return category_store
 
-    def add_feed(self, name, uri):
-        self.preferences['Feeds'][name] = Feed(name, uri)
+    def add_feed(self, feed):
+        self.preferences['Feeds'][feed.name] = feed
         self.update_preferences(self.preferences)
 
     def write_preferences(self):

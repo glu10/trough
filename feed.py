@@ -46,7 +46,7 @@ class Feed:
         return {'name': self.name, 'uri': self.uri, 'category': self.category}
 
     def to_value_list(self):
-        return [self.name, self.uri, self.category]
+        return [self.name, self.uri]
 
     def sort_items(self):
         """ Bucket sort with 3 buckets. """
