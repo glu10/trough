@@ -114,7 +114,7 @@ class Preferences:
         else:
             filter_objects = list()
             for filt, case_sensitive, hide_matches in self.preferences['Filters']:
-                filter_objects.append(Filter(filt, case_sensitive, hide_matches))
+                filter_objects.append(ItemFilter(filt, case_sensitive, hide_matches))
             self.preferences['Filters'] = filter_objects
 
    # def categories(self):
