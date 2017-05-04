@@ -18,28 +18,26 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-from threading import Lock
-
+from collections import defaultdict
 
 class Feed:
-    """ An RSS Feed, contains RSS Items """
+    """ An RSS Feed that contains RSS Items """
+    serializable_attributes = ['name', 'uri', 'category']
 
-    def __init__(self, name, uri, category="Uncategorized", refresh_limit=None):
+    def __init__(self, name, uri, category="Uncategorized"):
         self.name = name  # Externally enforced as unique
         self.uri = uri
-        self.items = list()
-        self.lock = Lock()  # for preventing multiple requests
+        self.items = [] 
         self.category = category
 
     @staticmethod
     def from_dict(attribute_dict):
         """ Deserialization """
-        attributes = ['name', 'uri', 'category']
-        for attribute in attributes:
-            if attribute not in attribute_dict:
-                raise RuntimeError('A Feed Object could not be deserialized correctly, ' + attribute +
-                                   ' was not present in the dictionary ' + str(attribute_dict))
-        return Feed(*[attribute_dict[attribute] for attribute in attributes])
+        try:
+            return Feed(*[attribute_dict[attribute] for attribute in serializable_attributes])
+        except KeyError e:
+            missing_key = e.args[0]
+            raise RuntimeError('Feed deserialization failed: {} was missing required key {}', attribute_dict, missing_key)
 
     def to_dict(self):
         """ Serialization """
@@ -49,20 +47,16 @@ class Feed:
         return [self.name, self.uri]
 
     def sort_items(self):
-        """ Bucket sort with 3 buckets. """
-        if self.items:
-            buckets = [list(), list(), list()]
-            for item in self.items:
-                buckets[item.ranking()].append(item)
-
-            i = 0
-            for bucket in buckets:
-                for item in bucket:
-                    self.items[i] = item
-                    i += 1
-
+        """ Return items sorted by ranking """
+        buckets = defaultdict(list) 
+        for item in self.items:
+            buckets[item.ranking()].append(item)
+        sorted_buckets = sorted(buckets.items(), key=lambda bucket: bucket[0])
+        self.items = list(itertools.chain.from_iterable(sorted_buckets))
+        
     def is_fake(self):
         return not self.uri
 
     def __eq__(self, other):
         return self.name == other.name
+

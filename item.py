@@ -17,10 +17,8 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
-from threading import Lock
 
 from utilityFunctions import string_to_RGBA
-
 
 class Item:
     """ An RSS item """
@@ -31,7 +29,6 @@ class Item:
         self.link = link
         self.filtered = False
         self.article = None  # from scraping
-        self.lock = Lock()  # prevents an item from accidentally being scraped by multiple threads at once
 
     @classmethod
     def from_href(cls, label, href):
@@ -44,6 +41,7 @@ class Item:
 
         return cls(label, title=href.text, link=link)
 
+    """ Remove, this is an anti-pattern """
     def get_color(self, appearance_dict):
         keys = ['Font Color', 'Filtered Color', 'Read Color']
         color_string = appearance_dict[keys[self.ranking()]]

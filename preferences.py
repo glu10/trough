@@ -21,7 +21,10 @@
 import copy
 import os
 
-from gi.repository import Gio, Gtk 
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gio, Gtk
 
 from feed import Feed
 from item_filter import ItemFilter
@@ -63,9 +66,9 @@ class Preferences:
 
         p = {
             'View': 'Three-Pane',
-            'Category Font': default_font,
-            'Headline Font': default_font,
-            'Story Font': document_font,
+            'Category Font': '10 Sans, sans-serif',
+            'Headline Font': '10 Sans, sans-serif',
+            'Story Font': '10 Sans, sans-serif',
             'Font Color': 'rgba(0, 0, 0, 1.0)',  # solid black
             'Background Color': 'rgba(255, 255, 255, 1.0)',  # solid white
             'Selection Font Color': 'rgba(255, 255, 255, 1.0)',  # solid white
@@ -73,6 +76,7 @@ class Preferences:
             'Read Color': 'rgba(117, 80, 123, 1.0)',  # a 'clicked-link' purple
             'Filtered Color': 'rgba(192, 47, 29, 1.0)',  # a dull uninviting red
         }
+        print(p)
         return p
 
     @staticmethod
