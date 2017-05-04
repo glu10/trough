@@ -28,9 +28,6 @@ import requests
 
 from feed import Feed
 from item import Item
-from ruleResolverFakeFeed import FakeFeedResolver
-from ruleResolverScraping import WrappedScrapeResolver
-from scrapeJob import ScrapeJob
 import utilityFunctions
 
 
@@ -48,11 +45,8 @@ class Gatherer:
 
     def create_and_start_threads(self, num_threads):
         threads = list()
-        scrape_resolver = WrappedScrapeResolver()
-        fake_feed_resolver = FakeFeedResolver('custom.fake_feeds')
         for i in range(num_threads):
-            thread = GathererWorkerThread(self, self.cache, scrape_resolver, fake_feed_resolver,
-                                          self.request_queue, self.fulfilled_feed_queue, self.fulfilled_scrape_queue)
+            thread = GathererWorkerThread(self, self.cache, self.request_queue, self.fulfilled_feed_queue, self.fulfilled_scrape_queue)
             threads.append(thread)
             thread.start()
         return threads
@@ -114,18 +108,14 @@ class Gatherer:
 
 
 class GathererWorkerThread(Thread):
-    def __init__(self, parent, cache, scrape_resolver, fake_feed_resolver,
-                 request_queue, fulfilled_feed_queue, fulfilled_scrape_queue):
+    def __init__(self, parent, cache, request_queue, fulfilled_feed_queue, fulfilled_scrape_queue):
         super().__init__(target=self.serve_requests)
         self.parent = parent
         self.cache = cache
-        self.scrape_resolver = scrape_resolver
-        self.fake_feed_resolver = fake_feed_resolver
         self.request_queue = request_queue
         self.fulfilled_feed_queue = fulfilled_feed_queue
         self.fulfilled_scrape_queue = fulfilled_scrape_queue
         self.session = requests.Session()
-        self.scrape_job = ScrapeJob(self.session, self.scrape_resolver)
         self.daemon = True
 
     def notify_main_thread(self, signal):
@@ -178,16 +168,10 @@ class GathererWorkerThread(Thread):
                     request.lock.release()
 
     def gather_item(self, item):
-        hit = self.cache.query(item.link)
-        if hit:
-            item.article = hit
-        else:
-            item.article = self.scrape_resolver.select_rule(item.link, self._fresh_scrape_job())
-            self.cache.put(item.link, item.article)
-        return item
+        pass
 
     def gather_fake_feed(self, feed):
-        feed.items = self.fake_feed_resolver.select_rule(feed.name, self._fresh_scrape_job())
+        pass
 
     def gather_feed(self, feed):
         """ Given a feed, retrieves the items of the feed """

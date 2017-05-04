@@ -27,7 +27,6 @@ gi.require_version('Gdk', '3.0')
 from gi.repository import Gio, Gtk
 
 from feed import Feed
-from item_filter import ItemFilter
 from utilityFunctions import load_file, write_file
 
 
@@ -69,14 +68,13 @@ class Preferences:
             'Category Font': '10 Sans, sans-serif',
             'Headline Font': '10 Sans, sans-serif',
             'Story Font': '10 Sans, sans-serif',
-            'Font Color': 'rgba(0, 0, 0, 1.0)',  # solid black
-            'Background Color': 'rgba(255, 255, 255, 1.0)',  # solid white
-            'Selection Font Color': 'rgba(255, 255, 255, 1.0)',  # solid white
-            'Selection Background Color': 'rgba(81, 126, 173, 1.0)',  # medium-dark blue
-            'Read Color': 'rgba(117, 80, 123, 1.0)',  # a 'clicked-link' purple
-            'Filtered Color': 'rgba(192, 47, 29, 1.0)',  # a dull uninviting red
+            'Font Color': '#000000',  # solid black
+            'Background Color': '#ffffff',  # solid white
+            'Selection Font Color': '#ffffff',  # solid white
+            'Selection Background Color': '#517ead',  # medium-dark blue
+            'Read Color': '#75507b',  # a 'clicked-link' purple
+            'Filtered Color': '#c02f1d',  # a dull uninviting red
         }
-        print(p)
         return p
 
     @staticmethod
@@ -177,41 +175,23 @@ class Preferences:
 
     def get_appearance_css(self):
         ap = self.appearance_preferences()
-        if Gtk.get_major_version() == 3 and Gtk.get_minor_version() >= 20:  # GTK 3.20 broke previous CSS
-            css = (
-                '#storyview text, #labelview, #headlineview{\n'
-                '   background-color: ' + ap['Background Color'] + ';\n'
-                '   color: ' + ap['Font Color'] + ';\n'
-                '}\n'
-                '* + #labelview, * + #headlineview{\n'
-                '   background-color: ' + ap['Background Color'] + ';\n'
-                '}\n'
-                '#storyview selection, #labelview:selected, #headlineview:selected{\n'
-                '    background-color: ' + ap['Selection Background Color'] + ';\n'
-                '    color: ' + ap['Selection Font Color'] + ';\n'
-                '}\n'
-                '#storyview {'
-                '    font: ' + ap['Story Font'] + ';\n'
-                '}\n'
-                '#headlineview {\n'
-                '    font: ' + ap['Headline Font'] + ';\n'
-                '}\n'
-            )
-        else:
-            css = (
-                '#storyview, #labelview, #headlineview {\n'
-                '   background-color: ' + ap['Background Color'] + ';\n'
-                '   color: ' + ap['Font Color'] + ';\n'
-                '}\n'
-                '#storyview:selected, #labelview:selected, #headlineview:selected {\n'
-                '    background-color: ' + ap['Selection Background Color'] + ';\n'
-                '    color: ' + ap['Selection Font Color'] + ';\n'
-                '}\n'
-                '#storyview {'
-                '    font: ' + ap['Story Font'] + ';\n'
-                '}\n'
-                '#headlineview {\n'
-                '    font: ' + ap['Headline Font'] + ';\n'
-                '}\n'
-            )
+        css = (
+            '#storyview text, #labelview, #headlineview{\n'
+            '   background-color: ' + ap['Background Color'] + ';\n'
+            '   color: ' + ap['Font Color'] + ';\n'
+            '}\n'
+            '* + #labelview, * + #headlineview{\n'
+            '   background-color: ' + ap['Background Color'] + ';\n'
+            '}\n'
+            '#storyview selection, #labelview:selected, #headlineview:selected{\n'
+            '    background-color: ' + ap['Selection Background Color'] + ';\n'
+            '    color: ' + ap['Selection Font Color'] + ';\n'
+            '}\n'
+            '#storyview {'
+            '    font: ' + ap['Story Font'] + ';\n'
+            '}\n'
+            '#headlineview {\n'
+            '    font: ' + ap['Headline Font'] + ';\n'
+            '}\n'
+        )
         return css.encode()

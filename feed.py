@@ -35,7 +35,7 @@ class Feed:
         """ Deserialization """
         try:
             return Feed(*[attribute_dict[attribute] for attribute in serializable_attributes])
-        except KeyError e:
+        except KeyError as e:
             missing_key = e.args[0]
             raise RuntimeError('Feed deserialization failed: {} was missing required key {}', attribute_dict, missing_key)
 

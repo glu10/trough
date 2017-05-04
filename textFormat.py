@@ -40,17 +40,10 @@ class TextFormat:
         text_view.set_name('storyview') # For CSS
 
         # Border sizes
-        if Gtk.get_major_version() == 3 and Gtk.get_minor_version() >= 20:
-            text_view.set_left_margin(12)
-            text_view.set_right_margin(12)
-            text_view.set_bottom_margin(5)
-            text_view.set_top_margin(5)
-        else:
-            text_view.set_border_window_size(Gtk.TextWindowType.LEFT, 10)
-            text_view.set_border_window_size(Gtk.TextWindowType.RIGHT, 12)  # Slightly more than left due to scroll bar
-            text_view.set_border_window_size(Gtk.TextWindowType.TOP, 5)
-            text_view.set_border_window_size(Gtk.TextWindowType.TOP, 5)
-
+        text_view.set_left_margin(12)
+        text_view.set_right_margin(12)
+        text_view.set_bottom_margin(5)
+        text_view.set_top_margin(5)
         text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         text_view.set_editable(False)
         text_view.set_cursor_visible(False)

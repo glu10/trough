@@ -24,7 +24,6 @@ from gi.repository import Gdk, Gio, Gtk
 
 from feed import Feed
 from feedDialog import FeedDialog
-from item_filter import ItemFilter
 from preferences import Preferences
 import utilityFunctions
 
