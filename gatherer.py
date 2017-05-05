@@ -19,7 +19,6 @@
 """
 
 from collections import defaultdict
-import re
 from threading import Thread
 from queue import Queue, Empty
 
@@ -38,7 +37,7 @@ class Gatherer:
         self.parent = parent
         self.preferences = preferences
         self.cache = cache
-        self.request_queue = Queue()  # Can contain Feed Requests and Item (scraping) requests
+        self.request_queue = Queue()  # Feeds and Items
         self.fulfilled_feed_queue = Queue()
         self.fulfilled_scrape_queue = Queue()
         self.threads = self.create_and_start_threads(2)
@@ -46,7 +45,13 @@ class Gatherer:
     def create_and_start_threads(self, num_threads):
         threads = list()
         for i in range(num_threads):
-            thread = GathererWorkerThread(self, self.cache, self.request_queue, self.fulfilled_feed_queue, self.fulfilled_scrape_queue)
+            thread = GathererWorkerThread(
+                    self,
+                    self.cache,
+                    self.request_queue,
+                    self.fulfilled_feed_queue,
+                    self.fulfilled_scrape_queue)
+
             threads.append(thread)
             thread.start()
         return threads
@@ -70,7 +75,6 @@ class Gatherer:
     @staticmethod
     def poll(q):
         """
-        Called poll instead of dequeue because of possible confusion with double-ended queue
         :param q: A Queue
         :return: Next member of the queue, or None if the queue is empty
         """
@@ -89,26 +93,15 @@ class Gatherer:
         else:
             return None
 
-    @staticmethod
-    def description_cleanup(description):
-        description = re.sub(r'\s+', ' ', description)
-        description = re.sub(r'\n\n(\n+)', '\n\n', description)
-
-        # Not sure if this is my problem or feedparser's but XML Character Entity References aren't all getting caught
-        description = re.sub(r'\&\#8211\;', '-', description)
-        description = re.sub(r'\&\#8212\;', '—', description)
-        description = re.sub(r'\&\#8216\;', '‘', description)
-        description = re.sub(r'\&\#8217\;', '’', description)
-        description = re.sub(r'\&\#8220\;', '“', description)
-        description = re.sub(r'\&\#8221\;', '”', description)
-        description = re.sub(r'\&\#8230\;', '…', description)
-        description = re.sub(r'<.*?>', '', description)
-
-        return description
-
 
 class GathererWorkerThread(Thread):
-    def __init__(self, parent, cache, request_queue, fulfilled_feed_queue, fulfilled_scrape_queue):
+    def __init__(
+            self,
+            parent,
+            cache,
+            request_queue,
+            fulfilled_feed_queue,
+            fulfilled_scrape_queue):
         super().__init__(target=self.serve_requests)
         self.parent = parent
         self.cache = cache
@@ -131,8 +124,7 @@ class GathererWorkerThread(Thread):
         while True:
             request = self.request_queue.get(block=True)
 
-            if request.lock.acquire(blocking=False):  # Can't use the cleaner "with lock:" syntax due to non-blocking
-
+            if request.lock.acquire(blocking=False):
                 try:
                     request_type = type(request)
 
@@ -144,12 +136,10 @@ class GathererWorkerThread(Thread):
                             self.gather_feed(feed)
 
                         if feed.items:
-                            # Checks the cache for any item link before handing the feed over
                             for item in feed.items:
                                 hit = self.cache.query(item.link)
                                 if hit:
                                     item.article = hit
-
                             self.fulfilled_feed_queue.put(feed)
                             self.notify_main_thread('feed_gathered_event')
 
@@ -160,10 +150,10 @@ class GathererWorkerThread(Thread):
                             if item.article:
                                 self.fulfilled_scrape_queue.put(item)
                                 self.notify_main_thread('item_scraped_event')
-
                     else:
-                        raise RuntimeError('Invalid request of type ' + str(request_type) +
-                                           ' given to GathererWorkerThread the item was ' + str(request))
+                        raise RuntimeError(
+                                'Invalid request of type {} given to Gatherer'
+                                .format(request_type))
                 finally:
                     request.lock.release()
 
@@ -188,10 +178,9 @@ class GathererWorkerThread(Thread):
                 link = d['link']
 
                 if not title and not description and not link:
-                    print('WARNING: An entry from the feed with label ' + feed.name +
-                          ' has no title, description, or link. Skipped.' + str(entry))
+                    print('WARNING: Skipping empty entry {} from {} feed'
+                          .format(entry, feed.name))
                 else:
-                    item = Item(feed.name, title, Gatherer.description_cleanup(description), link)
+                    item = Item(feed.name, title, description, link)
                     items.append(item)
-
         feed.items = items

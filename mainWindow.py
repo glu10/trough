@@ -16,13 +16,12 @@
 
 from math import floor
 
-from gi.repository import Gdk, Gio, GLib, GObject, Gtk
+from gi.repository import Gdk, GLib, GObject, Gtk
 
 from gatherer import Gatherer
 from feedDialog import FeedDialog
 from threePaneView import ThreePaneView
 from twoPaneView import TwoPaneView
-from preferences import Preferences
 from preferencesWindow import PreferencesWindow
 from utilityFunctions import make_button
 
@@ -68,19 +67,23 @@ class MainWindow(Gtk.Window):
             self.set_default_size(width, height)
         else:  # Just guess
             self.set_default_size(600, 800)
-        self.set_size_request(100, 100)  # Minimum size, to prevent fading to nothing
+        self.set_size_request(100, 100)  # Minimum size
 
     def set_window_icon(self):
         """
-        Attempts to find a generic RSS icon in the user's GTK theme, then associates it with the program if found.
+        Attempts to find a generic RSS icon in the user's GTK theme
+        and associates it with the program if found.
         """
         try:
             theme = Gtk.IconTheme.get_default()
-            icon = theme.lookup_icon("rss", 32, Gtk.IconLookupFlags.GENERIC_FALLBACK)
+            icon = theme.lookup_icon(
+                    "rss",
+                    32,
+                    Gtk.IconLookupFlags.GENERIC_FALLBACK)
             if icon:
                 icon = icon.load_icon()
                 self.set_icon(icon)
-        except GLib.GError:  # If the icon theme doesn't have an icon for RSS it's okay, purely visual
+        except GLib.GError:  # No RSS icon found
             pass
 
     def switch_view(self):
@@ -91,17 +94,16 @@ class MainWindow(Gtk.Window):
         views = {'Two-Pane': TwoPaneView, 'Three-Pane': ThreePaneView}
         view_class = views[view_key]
 
-        if type(self.current_view) != view_class:  # Will the new view actually be different from the current?
-            if self.current_view:  # Do we even have a current view? (we don't if just starting up)
+        if type(self.current_view) != view_class:  # Actual switch?
+            if self.current_view:
                 self.current_view.destroy_display()
 
-            self.current_view = view_class(self.preferences, self.gatherer)  # Make the new view
+            self.current_view = view_class(self.preferences, self.gatherer)
             self.current_view.populate(self.preferences.feed_list())
             self.add(self.current_view.top_level())
             self.show_all()
 
-            # Workaround, silences GTK warning 'without calling gtk_widget_get_preferred_width/height().' PyGObject bug?
-            self.get_preferred_size()
+            self.get_preferred_size()  # TODO: Investigate if still needed.
 
         return self.current_view
 
@@ -109,7 +111,10 @@ class MainWindow(Gtk.Window):
         css_provider = Gtk.CssProvider()
         css_provider.load_from_data(self.preferences.get_appearance_css())
         context = Gtk.StyleContext()
-        context.add_provider_for_screen(self.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        context.add_provider_for_screen(
+                self.get_screen(),
+                css_provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
         return css_provider
 
     def update_css(self):
@@ -124,20 +129,29 @@ class MainWindow(Gtk.Window):
         return header_bar
 
     def create_add_button(self):
-        add_button = make_button(theme_icon_string="add", tooltip_text="Quickly add a feed",
-                                 signal="clicked", function=self.on_add_clicked)
+        add_button = make_button(
+                theme_icon_string="add",
+                tooltip_text="Quickly add a feed",
+                signal="clicked",
+                function=self.on_add_clicked)
         return add_button
 
     def create_preferences_button(self):
-        preferences_button = make_button(theme_icon_string='gtk-preferences', backup_icon_string='preferences-system',
-                                         tooltip_text="Preferences", signal="clicked",
-                                         function=self.on_preferences_clicked)
+        preferences_button = make_button(
+                theme_icon_string='gtk-preferences',
+                backup_icon_string='preferences-system',
+                tooltip_text="Preferences",
+                signal="clicked",
+                function=self.on_preferences_clicked)
         return preferences_button
 
     def create_refresh_button(self):
-        refresh_button = make_button(theme_icon_string="view-refresh", tooltip_text="Refresh",
-                                     signal="clicked", function=self.on_refresh_clicked)
-        refresh_button.set_focus_on_click(False)  # Don't keep it looking "pressed" after clicked
+        refresh_button = make_button(
+                theme_icon_string="view-refresh",
+                tooltip_text="Refresh",
+                signal="clicked",
+                function=self.on_refresh_clicked)
+        refresh_button.set_focus_on_click(False)
         return refresh_button
 
     def on_add_clicked(self, widget=None):
@@ -165,7 +179,7 @@ class MainWindow(Gtk.Window):
         except AttributeError:
             pass
 
-    # TODO: It would be better to have this be in the view class but putting it here for now
+    # TODO: Move to view class
     def on_item_scraped(self, unnecessary_arg=None):
         while True:
             item = self.gatherer.grab_scrape_result()
@@ -174,7 +188,7 @@ class MainWindow(Gtk.Window):
             else:
                 break
 
-    # TODO: It would be better to have this be in the view class but putting it here for now
+    # TODO: Move to view class
     def on_feed_gathered(self, unnecessary_arg=None):
         while True:
             feed = self.gatherer.grab_feed_result()
@@ -189,7 +203,6 @@ class MainWindow(Gtk.Window):
         for fil in self.preferences.filters():
             fil.inspect_feed(feed)
 
-    # TODO: Idea: have a hotkey to add links to a buffer then you can open them all at once.
     def on_key_press(self, widget, event):
         key = Gdk.keyval_name(event.keyval)
         if key == "F5":
@@ -209,4 +222,3 @@ class MainWindow(Gtk.Window):
                 self.current_view.change_position(0)
         else:
             pass
-

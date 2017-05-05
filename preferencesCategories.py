@@ -20,7 +20,7 @@
 
 from abc import ABCMeta, abstractmethod
 
-from gi.repository import Gdk, Gio, Gtk
+from gi.repository import Gdk, Gtk
 
 from feed import Feed
 from feedDialog import FeedDialog
@@ -34,7 +34,7 @@ class PreferencesCategory(metaclass=ABCMeta):
     def __init__(self, preferences, label):
         self.choices = dict()
         if preferences[label] is not None:
-            self.choices = preferences[label].copy()  # Copying to prevent overwriting preferences until final okay.
+            self.choices = preferences[label].copy()  # Work on copy
         self.label = label
 
     @abstractmethod
@@ -59,26 +59,33 @@ class PreferencesCategory(metaclass=ABCMeta):
         actionables_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
         for label_text in label_texts:
-            labels_vbox.pack_start(self.descriptor_label(label_text), True, False, 0)
+            labels_vbox.pack_start(
+                    self.descriptor_label(label_text),
+                    True,
+                    False,
+                    0)
 
         for actionable in actionables:
             actionables_vbox.pack_start(actionable, True, False, 0)
 
-        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=True)
+        hbox = Gtk.Box(
+                orientation=Gtk.Orientation.HORIZONTAL,
+                homogeneous=True)
         hbox.add(labels_vbox)
         hbox.add(actionables_vbox)
         return hbox
 
     def surround_with_padding(self, to_be_padded):
         alignment = Gtk.Alignment()
-        alignment.set_padding(self.padding, self.padding, self.padding, self.padding)
+        alignment.set_padding(
+                self.padding,
+                self.padding,
+                self.padding,
+                self.padding)
         alignment.add(to_be_padded)
         return alignment
 
     def gather_choices(self):
-        """
-        From the GUI components, gather the selections and return them in a dictionary.
-        """
         return self.choices
 
     def bold_label(self, text, left=False):
@@ -88,26 +95,30 @@ class PreferencesCategory(metaclass=ABCMeta):
         label = Gtk.Label()
         label.set_markup('<b>' + text + '</b>')
         if left:
-            label.set_alignment(0, .5)  # Left justifies (set_justify will not work)
-            label.set_padding(5, 0)  # Pad from the left side
+            label.set_alignment(0, .5)
+            label.set_padding(5, 0)
 
         return label
 
     def descriptor_label(self, text):
         """
-        Label used in a preferences category to label an individual item in a class of selections
+        Label used in a preferences category
+        to label an individual item in a class of selections
         """
         label = Gtk.Label(text)
-        label.set_alignment(0, .5)  # Left justifies (set_justify will not work)
-        label.set_padding(5, 0)  # Pad from the left side
+        label.set_alignment(0, .5)
+        label.set_padding(5, 0)
         return label
 
 
 class AppearancePreferences(PreferencesCategory):
     """
-    Views (Two-Pane/Three-Pane)
-    Fonts (Category/Headline/Story)
-    Colors (Font Color/Background Color/Selection Color/Selection Background Color)
+    Views
+        (Two-Pane/Three-Pane)
+    Fonts
+        (Category/Headline/Story)
+    Colors
+       (Font Color/Background Color/Selection Color/Selection Background Color)
     Reset to Defaults Button
     """
     def __init__(self, parent, preferences):
@@ -117,26 +128,39 @@ class AppearancePreferences(PreferencesCategory):
         self.view_box = None
 
         self.font_idents = ['Category Font', 'Headline Font', 'Story Font']
-        self.font_buttons = [self.font_button(font) for font in self.font_idents]
+        self.font_buttons = map(self.font_button, self.font_idents)
 
-        self.color_idents = ['Font Color', 'Background Color', 'Selection Font Color', 'Selection Background Color',
-                             'Read Color', 'Filtered Color']
-        self.color_buttons = [self.color_button(color) for color in self.color_idents]
+        self.color_idents = [
+                'Font Color',
+                'Background Color',
+                'Selection Font Color',
+                'Selection Background Color',
+                'Read Color',
+                'Filtered Color']
+        self.color_buttons = map(self.color_button, self.color_idents)
 
     def create_display_area(self):
         top_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
 
         # View selection
         self.view_box = self.view_combo_box()
-        view_vbox = self.create_section('View', self.create_section_options([''], [self.view_box]))
+        view_vbox = self.create_section(
+                'View',
+                self.create_section_options([''], [self.view_box]))
         top_vbox.add(view_vbox)
 
         # Font selection
-        font_section = self.create_section('Fonts', self.create_section_options(self.font_idents, self.font_buttons))
+        font_section = self.create_section(
+                'Fonts',
+                self.create_section_options(self.font_idents, self.font_buttons))
         top_vbox.add(font_section)
 
         # Font Colors
-        color_section = self.create_section('Colors', self.create_section_options(self.color_idents, self.color_buttons))
+        color_section = self.create_section(
+                'Colors',
+                self.create_section_options(
+                    self.color_idents,
+                    self.color_buttons))
         top_vbox.add(color_section)
 
         # Reset to Defaults Button
@@ -179,14 +203,18 @@ class AppearancePreferences(PreferencesCategory):
         self.choices[name] = cc.get_rgba().to_string()
 
     def confirm_and_reset_defaults(self, widget):
-        if utilityFunctions.decision_popup(self.parent, 'Reset appearance to defaults?',
-           'Are you sure you want to reset your appearance preferences to default values?'):
+        if utilityFunctions.decision_popup(
+                self.parent,
+                'Reset appearance to defaults?',
+                'Are you sure you want to reset your appearance preferences to default values?'):
             self.choices = Preferences.default_appearance_preferences()
 
             # Visual Effects
             # Set the view combo box to "Double" which is the second entry
             model = self.view_box.get_model()
-            self.view_box.set_active_iter(model.iter_next(model.get_iter_first()))
+            self.view_box.set_active_iter(
+                    model.iter_next(
+                        model.get_iter_first()))
 
             # Set the font buttons to display the default font values
             for fb, fi in zip(self.font_buttons, self.font_idents):
@@ -201,8 +229,8 @@ class AppearancePreferences(PreferencesCategory):
 class FeedsPreferences(PreferencesCategory):
     """
     Displays feeds and allows for editing of the list and feed information.
-    I'm going to have feed information be edited through a new dialog (although that is kind of annoying)
-    because it simplifies how to catch/verify changes.
+    Feed information will be edited through a new dialog because it simplifies
+    how to catch/verify changes.
     """
     def __init__(self, parent, preferences, cache):
         super().__init__(preferences, 'Feeds')
@@ -211,21 +239,31 @@ class FeedsPreferences(PreferencesCategory):
         self.info_box, self.info_scroll = self.info_placeholder()
         self.feed_list = Gtk.ListStore(str, str)
         self.view = Gtk.TreeView(model=self.feed_list)
-        self.cache = cache # only used for being cleared
+        self.cache = cache  # only used for being cleared
 
     def create_display_area(self):
-        remove_button = utilityFunctions.make_button(theme_icon_string="remove", tooltip_text="Remove selected feed",
-                                                     signal="clicked", function=self.remove_selection)
+        remove_button = utilityFunctions.make_button(
+                theme_icon_string="remove",
+                tooltip_text="Remove selected feed",
+                signal="clicked",
+                function=self.remove_selection)
 
-        add_button = utilityFunctions.make_button(theme_icon_string="add", tooltip_text="Add a feed",
-                                                  signal="clicked", function=self.add_feed)
+        add_button = utilityFunctions.make_button(
+                theme_icon_string="add",
+                tooltip_text="Add a feed",
+                signal="clicked",
+                function=self.add_feed)
 
-        edit_button = utilityFunctions.make_button(theme_icon_string="gtk-edit", tooltip_text="Edit selected feed",
-                                                   signal="clicked", function=self.edit_feed)
+        edit_button = utilityFunctions.make_button(
+                theme_icon_string="gtk-edit",
+                tooltip_text="Edit selected feed",
+                signal="clicked",
+                function=self.edit_feed)
 
-        clear_cache_button = utilityFunctions.make_button(tooltip_text='Clears all scraped articles and ' +
-                                                                       'read history information',
-                                                          signal='clicked', function=self.clear_cache)
+        clear_cache_button = utilityFunctions.make_button(
+                tooltip_text='Clears all scraped articles and read history information',
+                signal='clicked',
+                function=self.clear_cache)
         clear_cache_button.set_label('Clear cache')
 
         button_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -280,7 +318,7 @@ class FeedsPreferences(PreferencesCategory):
     @staticmethod
     def info_placeholder():
         """
-        The GUI component that will be populated with feed information when a feed is selected.
+        Will be populated with feed information when a feed is selected.
         """
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         # Feed information label
@@ -339,14 +377,10 @@ class FeedsPreferences(PreferencesCategory):
         model, iter = selection.get_selected()
         if iter:
             model.remove(iter)
-            # Commented out the attempt to move selection because of GTK-critical error.
-            # Try to move the selection to the next or previous feed.
-            #if not self.attempt_selection(selection, iter):
-            #  self.attempt_selection(selection, model.iter_parent(iter))
 
     def add_feed(self, button):
         """
-        Note: This only adds the feed to the temporary feed list in the preferences window.
+        Note: Change only appears when preferences are saved.
         """
         dialog = FeedDialog(self.parent, feed_container=self.feed_list)
         feed = dialog.get_response()
@@ -495,8 +529,15 @@ class FiltrationPreferences(PreferencesCategory):
 
 class FilterDialog(Gtk.Dialog):
     def __init__(self, title, parent, filter_list):
-        Gtk.Dialog.__init__(self, title, parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                                     Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        Gtk.Dialog.__init__(
+                self,
+                title,
+                parent,
+                0,
+                (Gtk.STOCK_CANCEL,
+                 Gtk.ResponseType.CANCEL,
+                 Gtk.STOCK_OK,
+                 Gtk.ResponseType.OK))
 
         self.set_size_request(150, 100)
         self.filter_list = filter_list  # used for checking uniqueness
@@ -506,7 +547,7 @@ class FilterDialog(Gtk.Dialog):
         self.hide_matches = Gtk.CheckButton(label='Hide matches')
         self.error_label = Gtk.Label(' ')
 
-        # Make the ok button the default button so it can be triggered by the enter key.
+        # To trigger ok_button with Enter
         ok_button = self.get_widget_for_response(response_id=Gtk.ResponseType.OK)
         ok_button.set_can_default(True)
         ok_button.grab_default()
@@ -540,13 +581,18 @@ class FilterDialog(Gtk.Dialog):
                 if text == '':
                     self.toggle_error(True)
                 elif previous or self.is_unique(text):
-                    return_val = [text, self.caps.get_active(), self.hide_matches.get_active()]
+                    return_val = [
+                            text,
+                            self.caps.get_active(),
+                            self.hide_matches.get_active()]
                     break
                 else:
-                    utilityFunctions.warning_popup(self, 'Error', 'The filter ' + text + ' already exists.')
+                    utilityFunctions.warning_popup(
+                            self,
+                            'Error',
+                            'The filter {} already exists.'.format(text))
                     self.toggle_error(False)
-
-            elif response == Gtk.ResponseType.CANCEL or response == Gtk.ResponseType.NONE:
+            elif response in (Gtk.ResponseType.CANCEL, Gtk.ResponseType.NONE):
                 break
 
         self.destroy()
@@ -554,8 +600,10 @@ class FilterDialog(Gtk.Dialog):
 
     def toggle_error(self, show):
         if show:
-            self.label.set_markup('<span color="red">Filter</span>')
-            self.error_label.set_markup('<span color="red">Fill in the missing information.</span>')
+            self.label.set_markup(
+                    '<span color="red">Filter</span>')
+            self.error_label.set_markup(
+                    '<span color="red">Fill in the missing information.</span>')
         else:
             self.label.set_markup('Filter')
             self.error_label.set_markup(' ')

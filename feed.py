@@ -19,6 +19,8 @@
 """
 
 from collections import defaultdict
+from itertools import chain
+
 
 class Feed:
     """ An RSS Feed that contains RSS Items """
@@ -27,17 +29,21 @@ class Feed:
     def __init__(self, name, uri, category="Uncategorized"):
         self.name = name  # Externally enforced as unique
         self.uri = uri
-        self.items = [] 
+        self.items = []
         self.category = category
 
     @staticmethod
-    def from_dict(attribute_dict):
+    def from_dict(cls, attribute_dict):
         """ Deserialization """
         try:
-            return Feed(*[attribute_dict[attribute] for attribute in serializable_attributes])
+            return Feed(
+                    *[attribute_dict[attribute] for attribute
+                        in cls.serializable_attributes])
         except KeyError as e:
             missing_key = e.args[0]
-            raise RuntimeError('Feed deserialization failed: {} was missing required key {}', attribute_dict, missing_key)
+            raise RuntimeError(
+                    'Feed deserialization failed: {}, missing required key {}'
+                    .format(attribute_dict, missing_key))
 
     def to_dict(self):
         """ Serialization """
@@ -48,15 +54,14 @@ class Feed:
 
     def sort_items(self):
         """ Return items sorted by ranking """
-        buckets = defaultdict(list) 
+        buckets = defaultdict(list)
         for item in self.items:
             buckets[item.ranking()].append(item)
         sorted_buckets = sorted(buckets.items(), key=lambda bucket: bucket[0])
-        self.items = list(itertools.chain.from_iterable(sorted_buckets))
-        
+        self.items = list(chain.from_iterable(sorted_buckets))
+
     def is_fake(self):
         return not self.uri
 
     def __eq__(self, other):
         return self.name == other.name
-
