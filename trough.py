@@ -21,7 +21,7 @@ import signal
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
-from gi.repository import Gdk, Gio, GLib, Gtk 
+from gi.repository import Gdk, Gio, GLib, Gtk
 
 from cache import Cache
 from mainWindow import MainWindow
@@ -44,7 +44,11 @@ class Trough(Gtk.Application):
 
     def do_activate(self, *args):
         if not self.main_window and self.preferences and self.cache:
-            self.main_window = MainWindow(self.preferences, self.cache, application=self, title='Trough')
+            self.main_window = MainWindow(
+                    self.preferences,
+                    self.cache,
+                    application=self,
+                    title='Trough')
             self.main_window.connect('delete_event', self.on_quit)
             self.add_window(self.main_window)
             self.main_window.present()
@@ -52,6 +56,7 @@ class Trough(Gtk.Application):
     def on_quit(self, action, param):
         self.cache.write_cache()
         self.quit()
+
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL)  # Respond to Ctrl+C
@@ -63,7 +68,3 @@ if __name__ == '__main__':
     # Start things up
     trough = Trough()
     trough.run(sys.argv)
-
-
-
-

@@ -18,16 +18,13 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-"""
-This file contains functions that are used in multiple places within Trough that have a similar purpose.
-"""
-
 import os
 import json
 import errno
 
 import feedparser
 from gi.repository import Gdk, Gio, Gtk
+
 
 def feedparser_parse(uri):
     """
@@ -81,7 +78,7 @@ def load_file(containing_directory, filename, defaults):
             except json.decoder.JSONDecodeError:
                 raise RuntimeError('Error parsing the JSON in ' + file_path + ', is it valid JSON?')
             # Make sure that the information we are getting actually corresponds to real preferences.
-            if defaults and type(defaults==dict) and sorted(data.keys()) != sorted(defaults.keys()):
+            if defaults and type(defaults == dict) and sorted(data.keys()) != sorted(defaults.keys()):
                 raise RuntimeError('Data in ' + file_path + ' did not match expectations,' +
                                                             ' fix the problem or delete the file.')
     return data
@@ -94,6 +91,7 @@ def write_file(containing_directory, filename, data):
     file_path = os.path.join(containing_directory, filename)
     with open(file_path, 'w') as data_file:
         json.dump(data, data_file)
+
 
 """ END FILE OPERATIONS """
 
@@ -118,6 +116,7 @@ def decision_popup(window, first, second):
         return True
     else:
         return False
+
 
 """ END GENERIC DIALOGS """
 

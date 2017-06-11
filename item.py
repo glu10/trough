@@ -20,6 +20,7 @@
 
 from utilityFunctions import string_to_RGBA
 
+
 class Item:
     """ An RSS item """
     def __init__(self, label, title='', description='', link=''):
@@ -48,14 +49,10 @@ class Item:
         return string_to_RGBA(color_string)
 
     def ranking(self):
-        """ Used for item ordering/classification. Priority: Unread -> Unread but Filtered -> Read """
+        """ Used for item ordering/classification. Lower number = More Priority """
         if self.article:
             return 2
         elif self.filtered:
             return 1
         else:
             return 0
-
-
-
-

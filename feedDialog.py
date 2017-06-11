@@ -51,24 +51,24 @@ class FeedDialog(Gtk.Dialog):
 
         self.error_label = Gtk.Label('')
         self.error_label.set_markup('<span color="red">Fill in the missing information.</span>')
-        grid.attach(self.error_label, 0, len(self.rows)+1, num_columns , 1)
+        grid.attach(self.error_label, 0, len(self.rows)+1, num_columns, 1)
 
         box = self.get_content_area()
         box.add(grid)
         box.show_all()
-        self.error_label.hide() # hidden initially, only shown if information is incomplete
+        self.error_label.hide()  # hidden initially, only shown if information is incomplete
 
     def get_response(self):
         """ Primary external call. Returns a valid Feed object upon success or None otherwise. """
         ret = None
         if self.run() == Gtk.ResponseType.OK:
-            ret = Feed(*(row.retrieve() for row in self.rows)) # Construct a feed object.
+            ret = Feed(*(row.retrieve() for row in self.rows))  # Construct a feed object.
         self.destroy()
         return ret
 
     def on_dialog_response(self, parent, response):
         if response == Gtk.ResponseType.OK and not self.verify():
-            self.emit_stop_by_name('response') # stops the signal from  exiting the run() loop
+            self.emit_stop_by_name('response')  # stops the signal from  exiting the run() loop
 
     def verify(self):
         """ Checks each row for correctness. Issues a warning to the user if correctness is conditional. """
@@ -93,7 +93,6 @@ class FeedDialog(Gtk.Dialog):
         decision = utilityFunctions.decision_popup(self, 'Warning!', '\n'.join(warning_list))
         warning_list.clear()
         return decision
-
 
 
 class DialogRow:
@@ -123,13 +122,14 @@ class DialogRow:
         """ Is the information in the interactive element correct? If conditional, append a warning. """
         return True  # vacuously true
 
+
 class FeedDialogRow(DialogRow):
     """ GUI element for naming an RSS feed. """
 
     def __init__(self, *args):
         super().__init__(*args)
         self.preexisting = None  # Feeds that already exist (for enforcing uniqueness)
-        self.filled_in_name = None  # If a feed name was filled in, it has to be remembered to prevent erroneously flagging it as not unique.
+        self.filled_in_name = None  # Remember to protect uniqueness
 
     def fill_in(self, feed):
         self.filled_in_name = feed.name
@@ -146,12 +146,12 @@ class FeedDialogRow(DialogRow):
         return self
 
     def verify(self, warning_list):
-       feed_name = self.retrieve()
-       if not feed_name:
-           return False  # A blank feed name is always incorrect
-       elif feed_name != self.filled_in_name and feed_name in self.preexisting:
-            warning.append('The feed name ' + feed_name + ' already exists and will be overwritten.')
-       return True
+        feed_name = self.retrieve()
+        if not feed_name:
+            return False  # A blank feed name is always incorrect
+        elif feed_name != self.filled_in_name and feed_name in self.preexisting:
+            warning_list.append('The feed name ' + feed_name + ' already exists and will be overwritten.')
+        return True
 
 
 class UriDialogRow(DialogRow):
@@ -173,4 +173,3 @@ class UriDialogRow(DialogRow):
         if not content:
             warning_list.append('The URI ' + uri + ' did not contain a valid RSS feed.')
         return True
-

@@ -31,8 +31,10 @@ import utilityFunctions
 
 
 class Gatherer:
-    """ Gatherer is a singleton responsible for handling network requests """
+    def __init__(self, parent, preferences, cache):
+        pass
 
+"""
     def __init__(self, parent, preferences, cache):
         self.parent = parent
         self.preferences = preferences
@@ -74,11 +76,8 @@ class Gatherer:
 
     @staticmethod
     def poll(q):
-        """
         :param q: A Queue
         :return: Next member of the queue, or None if the queue is empty
-        """
-        try:
             result = q.get(block=False)
             return result
         except Empty:
@@ -164,7 +163,6 @@ class GathererWorkerThread(Thread):
         pass
 
     def gather_feed(self, feed):
-        """ Given a feed, retrieves the items of the feed """
         content = utilityFunctions.feedparser_parse(feed.uri)
         items = list()
         if content:
@@ -183,4 +181,6 @@ class GathererWorkerThread(Thread):
                 else:
                     item = Item(feed.name, title, description, link)
                     items.append(item)
-        feed.items = items
+        feed.items = item
+        """
+

@@ -17,7 +17,7 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
-from gi.repository import Gdk, Gtk, Pango
+from gi.repository import Gtk, Pango
 
 
 class TextFormat:
@@ -37,7 +37,7 @@ class TextFormat:
         else:
             text_view = textview
 
-        text_view.set_name('storyview') # For CSS
+        text_view.set_name('storyview')  # For CSS
 
         # Border sizes
         text_view.set_left_margin(12)

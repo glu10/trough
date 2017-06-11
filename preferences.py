@@ -49,7 +49,6 @@ class Preferences:
             'Appearance': Preferences.default_appearance_preferences(),
             'Feeds': Preferences.default_feeds_preferences(),
             'Filters': Preferences.default_filtration_preferences(),
-            #'Categories': Preferences.default_categories_preferences(), 
         }
         return preferences
 
@@ -85,10 +84,6 @@ class Preferences:
     def default_filtration_preferences():
         return list()
 
-    @staticmethod
-    def default_categories_preferences():
-        return Gtk.ListStore()
-
     def appearance_preferences(self):
         return self.preferences['Appearance']
 
@@ -99,17 +94,18 @@ class Preferences:
         return self.preferences['Filters']
 
     def load_preferences(self):
-        self.preferences = load_file(self.preferences_directory, self.preferences_file, self.preferences)
+        self.preferences = load_file(
+                self.preferences_directory,
+                self.preferences_file,
+                self.preferences)
 
         if self.preferences['Feeds'] is None:
             self.preferences['Feeds'] = self.default_feeds_preferences()
         else:
-            # Since we used JSON and not pickling, need to transform the serialized feed information into Feed objects
             feed_object_dict = dict()
             for feed_name, feed_attributes in self.preferences['Feeds'].items():
                 feed_object_dict[feed_name] = Feed.from_dict(feed_attributes)
             self.preferences['Feeds'] = feed_object_dict
-            #self.preferences['Categories'] = self.construct_categories()
 
         if self.preferences['Filters'] is None:
             self.preferences['Filters'] = self.default_filtration_preferences()
@@ -118,9 +114,6 @@ class Preferences:
             for filt, case_sensitive, hide_matches in self.preferences['Filters']:
                 filter_objects.append(ItemFilter(filt, case_sensitive, hide_matches))
             self.preferences['Filters'] = filter_objects
-
-   # def categories(self):
-   #     return self.preferences['Categories']
 
     def feeds(self):
         return self.preferences['Feeds']
@@ -137,22 +130,15 @@ class Preferences:
         else:
             return None
 
-   # def construct_categories(self):
-   #     # Reconstruct category list from the current feeds
-   #     categories = {feed.category for feed in self.feed_list()}
-   #     categories.sort()
-   #
-   #     category_store = Gtk.ListStore()
-   #     for category in categories:
-   #         category_store.append(category)
-   #     return category_store
-
     def add_feed(self, feed):
         self.preferences['Feeds'][feed.name] = feed
         self.update_preferences(self.preferences)
 
     def write_preferences(self):
-        write_file(self.preferences_directory, self.preferences_file, self.serialize_preferences(self.preferences))
+        write_file(
+                self.preferences_directory,
+                self.preferences_file,
+                self.serialize_preferences(self.preferences))
 
     def update_preferences(self, preferences):
         """ Convenience function """

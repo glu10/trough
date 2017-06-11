@@ -122,6 +122,3 @@ class NewsView(metaclass=ABCMeta):
         """
         Display an item's content.
         """
-
-
-

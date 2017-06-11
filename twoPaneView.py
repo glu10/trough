@@ -149,6 +149,3 @@ class TwoPaneView(NewsView):
                 it[3] = item.get_color(appearance_dict)
             else:  # This feed was removed
                 model.remove(it.iter)
-
-
-

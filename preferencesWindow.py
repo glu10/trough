@@ -19,7 +19,7 @@
 """
 
 from gi.repository import Gtk
-from preferencesCategories import *
+from preferencesCategories import AppearancePreferences, FeedsPreferences, FiltrationPreferences
 
 
 class PreferencesWindow(Gtk.Dialog):
@@ -56,8 +56,3 @@ class PreferencesWindow(Gtk.Dialog):
         self.parent.update_css()
         view = self.parent.switch_view()
         view.update_appearance(self.preferences['Appearance'])
-
-        
-
-
-

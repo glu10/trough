@@ -18,7 +18,7 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-from gi.repository import Gdk, Gtk 
+from gi.repository import Gdk, Gtk
 
 from twoPaneView import TwoPaneView
 
@@ -122,8 +122,3 @@ class ThreePaneView(TwoPaneView):
         elif not feed:
             for it in model:
                 model.remove(it.iter)
-
-
-
-
-

@@ -385,7 +385,7 @@ class FeedsPreferences(PreferencesCategory):
         dialog = FeedDialog(self.parent, feed_container=self.feed_list)
         feed = dialog.get_response()
         if feed:
-            self.find_and_remove_feed(feed) # Prevents duplicate names
+            self.find_and_remove_feed(feed)  # Prevents duplicate names
             iter = self.feed_list.append(feed.to_value_list())
             self.view.get_selection().select_iter(iter)  # Selects the feed just added.
 
@@ -473,12 +473,24 @@ class FiltrationPreferences(PreferencesCategory):
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
 
-        remove_button = utilityFunctions.make_button(theme_icon_string="remove", tooltip_text="Remove selected filter",
-                                                     signal="clicked", function=self.remove_filter)
-        add_button = utilityFunctions.make_button(theme_icon_string="add", tooltip_text="Add a filter",
-                                                  signal="clicked", function=self.add_filter)
-        edit_button = utilityFunctions.make_button(theme_icon_string="gtk-edit", tooltip_text="Edit selected filter",
-                                                   signal="clicked", function=self.edit_filter)
+        remove_button = utilityFunctions.make_button(
+                theme_icon_string="remove",
+                tooltip_text="Remove selected filter",
+                signal="clicked",
+                function=self.remove_filter)
+
+        add_button = utilityFunctions.make_button(
+                theme_icon_string="add",
+                tooltip_text="Add a filter",
+                signal="clicked",
+                function=self.add_filter)
+
+        edit_button = utilityFunctions.make_button(
+                theme_icon_string="gtk-edit",
+                tooltip_text="Edit selected filter",
+                signal="clicked",
+                function=self.edit_filter)
+
         hbox.add(remove_button)
         hbox.add(add_button)
         hbox.add(edit_button)
