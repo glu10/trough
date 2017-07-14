@@ -34,6 +34,12 @@ class Gatherer:
     def __init__(self, parent, preferences, cache):
         pass
 
+    def request_feeds(self):
+        pass
+    
+    def request(self, request):
+        pass
+
 """
     def __init__(self, parent, preferences, cache):
         self.parent = parent
