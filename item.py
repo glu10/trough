@@ -18,41 +18,13 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-from utilityFunctions import string_to_RGBA
-
-
 class Item:
     """ An RSS item """
-    def __init__(self, label, title='', description='', link=''):
+    def __init__(self, feed_name, label, uri, title='', description='', article=None):
+        self.feed_name = feed_name
         self.label = label
         self.title = title
         self.description = description
-        self.link = link
-        self.filtered = False
-        self.article = None  # from scraping
+        self.uri = link
+        self.article = None
 
-    @classmethod
-    def from_href(cls, label, href):
-        from bs4.element import Tag
-        assert(type(href) == Tag)
-
-        link = href.get('href')
-        if link is None:
-            link = ''
-
-        return cls(label, title=href.text, link=link)
-
-    """ Remove, this is an anti-pattern """
-    def get_color(self, appearance_dict):
-        keys = ['Font Color', 'Filtered Color', 'Read Color']
-        color_string = appearance_dict[keys[self.ranking()]]
-        return string_to_RGBA(color_string)
-
-    def ranking(self):
-        """ Used for item ordering/classification. Lower number = More Priority """
-        if self.article:
-            return 2
-        elif self.filtered:
-            return 1
-        else:
-            return 0

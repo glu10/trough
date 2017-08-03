@@ -29,7 +29,6 @@ class Feed:
     def __init__(self, name, uri, category="Uncategorized"):
         self.name = name  # Externally enforced as unique
         self.uri = uri
-        self.items = []
         self.category = category
 
     @staticmethod
@@ -51,17 +50,6 @@ class Feed:
 
     def to_value_list(self):
         return [self.name, self.uri]
-
-    def sort_items(self):
-        """ Return items sorted by ranking """
-        buckets = defaultdict(list)
-        for item in self.items:
-            buckets[item.ranking()].append(item)
-        sorted_buckets = sorted(buckets.items(), key=lambda bucket: bucket[0])
-        self.items = list(chain.from_iterable(sorted_buckets))
-
-    def is_fake(self):
-        return not self.uri
 
     def __eq__(self, other):
         return self.name == other.name

@@ -116,12 +116,9 @@ class TwoPaneView(NewsView):
         self.clear_store(self.headline_store, self.toggle_headline_listening)
         TextFormat.empty(self.content_view)
         super().refresh()
-        self.gatherer.request_feeds()
 
-    def receive_feed(self, feed):
-        if self.mark_feed(feed):
-            for pos, item in enumerate(feed.items):
-                self.headline_store.append([feed.name, item.title, pos, item.get_color(self.appearance())])
+    def receive_item(self, item):
+            self.headline_store.append([item.feed_name, item.title, 0, item.get_color(self.appearance())])
 
     def get_info_from_headline(self, headline):
         self.last_item_feed_name = headline[0]
@@ -135,6 +132,7 @@ class TwoPaneView(NewsView):
         if model and it:
             self.get_info_from_headline(model[it])
             self.color_headline(model[it], string_to_RGBA(self.appearance()['Read Color']))
+            # TODO remove upcall, actually store the item information where we need it
             item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
             if item.article:
                 TextFormat.prepare_content_display(item, self.content_view)

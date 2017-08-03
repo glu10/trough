@@ -1,5 +1,6 @@
 """
     Trough - a GTK+ RSS news reader
+
     Copyright (C) 2015 Andrew Asp
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -11,6 +12,7 @@
     GNU General Public License for more details.
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see {http://www.gnu.org/licenses/}.
+
     Trough homepage: https://github.com/glu10/trough
 """
 
@@ -28,11 +30,6 @@ from utilityFunctions import make_button
 
 class MainWindow(Gtk.Window):
 
-    # __gsignals__ is used to register the names of custom signals
-    __gsignals__ = {
-        'item_scraped_event': (GObject.SIGNAL_RUN_FIRST, None, ()),
-        'feed_gathered_event': (GObject.SIGNAL_RUN_FIRST, None, ())
-    }
     __gtype_name__ = 'TroughWindow'
 
     def __init__(self, preferences, cache, **kwargs):
@@ -40,8 +37,6 @@ class MainWindow(Gtk.Window):
 
         # Signals
         self.connect('key_press_event', self.on_key_press)
-        self.connect('item_scraped_event', self.on_item_scraped)
-        self.connect('feed_gathered_event', self.on_feed_gathered)
 
         self.set_good_default_size()
         self.set_window_icon()
@@ -50,11 +45,19 @@ class MainWindow(Gtk.Window):
         self.header_bar = self.create_header()
 
         self.cache = cache
-        self.gatherer = Gatherer(self, self.preferences, self.cache)
+
+        self.gatherer = Gatherer(self)
+        feeds = self.preferences.feeds()
+        if feeds:
+            for feed in feeds:
+                self.gatherer.request(feed)
+            self.gatherer.start()
+        else:
+            # TODO: Decide how to display a message prompting the user to add a feed
+            pass
         self.current_view = None
         self.switch_view()
 
-        self.gatherer.request_feeds()
 
     def set_good_default_size(self):
         screen = self.get_screen()
@@ -179,29 +182,8 @@ class MainWindow(Gtk.Window):
         except AttributeError:
             pass
 
-    # TODO: Move to view class
-    def on_item_scraped(self, unnecessary_arg=None):
-        while True:
-            item = self.gatherer.grab_scrape_result()
-            if item and item.article:
-                self.current_view.receive_article(item)
-            else:
-                break
-
-    # TODO: Move to view class
-    def on_feed_gathered(self, unnecessary_arg=None):
-        while True:
-            feed = self.gatherer.grab_feed_result()
-            if feed and feed.items:
-                self.filter_feed(feed)
-                feed.sort_items()
-                self.current_view.receive_feed(feed)
-            else:
-                break
-
-    def filter_feed(self, feed):
-        for fil in self.preferences.filters():
-            fil.inspect_feed(feed)
+    def on_item_scraped(self, item):
+        self.current_view.receive_article(item)
 
     def on_key_press(self, widget, event):
         key = Gdk.keyval_name(event.keyval)

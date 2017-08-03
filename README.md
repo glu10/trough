@@ -3,6 +3,8 @@ Trough
 
 A GTK+ RSS news reader (currently being revived!)
 
+For now, do not attempt to run this.
+
 ## Planned changes in revival:
 * Asynchronous requests.
 * NLP in favor of scraping rules.

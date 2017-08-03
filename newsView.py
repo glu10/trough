@@ -69,9 +69,7 @@ class NewsView(metaclass=ABCMeta):
         """
         Retrieves the currently active story's url, then calls open_link
         """
-        active = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
-        if active:
-            self.open_link(active.link)
+        pass
 
     def populate(self, feeds):
         """
@@ -101,12 +99,6 @@ class NewsView(metaclass=ABCMeta):
         if fresh:
             self.received_feeds.add(feed.name)
         return fresh
-
-    @abstractmethod
-    def receive_feed(self, feed):
-        """
-        A worker thread delivered a feed to the view, add it (including its items) to the view if it is not a duplicate.
-        """
 
     def receive_article(self, item):
         """

@@ -98,6 +98,7 @@ class Preferences:
                 self.preferences_directory,
                 self.preferences_file,
                 self.preferences)
+        print(self.preferences['Feeds'])
 
         if self.preferences['Feeds'] is None:
             self.preferences['Feeds'] = self.default_feeds_preferences()
