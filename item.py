@@ -20,11 +20,10 @@
 
 class Item:
     """ An RSS item """
-    def __init__(self, feed_name, label, uri, title='', description='', article=None):
+
+    def __init__(self, feed_name, uri, title='', description='', article=None):
         self.feed_name = feed_name
-        self.label = label
+        self.uri = uri
         self.title = title
         self.description = description
-        self.uri = link
         self.article = None
-

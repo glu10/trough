@@ -24,14 +24,13 @@ from itertools import chain
 
 class Feed:
     """ An RSS Feed that contains RSS Items """
-    serializable_attributes = ['name', 'uri', 'category']
+    serializable_attributes = ['name', 'uri']
 
-    def __init__(self, name, uri, category="Uncategorized"):
+    def __init__(self, name, uri):
         self.name = name  # Externally enforced as unique
         self.uri = uri
-        self.category = category
 
-    @staticmethod
+    @classmethod
     def from_dict(cls, attribute_dict):
         """ Deserialization """
         try:
@@ -46,7 +45,7 @@ class Feed:
 
     def to_dict(self):
         """ Serialization """
-        return {'name': self.name, 'uri': self.uri, 'category': self.category}
+        return {'name': self.name, 'uri': self.uri}
 
     def to_value_list(self):
         return [self.name, self.uri]

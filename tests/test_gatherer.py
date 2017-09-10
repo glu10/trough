@@ -1,20 +1,37 @@
+import asyncio
+import time
 import unittest
 
-import asyncio
+from unittest.mock import MagicMock
+
 from gatherer import Gatherer
+from item import Item
+from feed import Feed
 
 class TestGatherer(unittest.TestCase):
 
-    def setUp(self):
-        loop = asyncio.new_event_loop()
-        self.gatherer = Gatherer(None)
-        self.test_uri = None # Used to paste in representative test URIs
+    @classmethod
+    def setUpClass(cls):
+        cls.loop = asyncio.new_event_loop()
+        cls.mock_parent = MagicMock()
+        cls.mock_parent.on_item_scraped = MagicMock()
+        cls.gatherer = Gatherer(cls.mock_parent)
 
-    def tearDown(self):
-        self.gatherer.stop()
-    
-    def test_request_url(self):
-        self.gatherer.request(self.test_uri)
-        self.gatherer.start()
-        
-        
+    @classmethod
+    def tearDownClass(cls):
+        cls.gatherer.stop()
+
+    def test_request_item(self):
+        test_uri = 'http://money.cnn.com/2017/09/10/news/companies/disney-world-closing/index.html'
+        item = Item('', test_uri)
+        self.gatherer.request(item)
+        while not self.mock_parent.on_item_scraped.called:
+            print('Item Sleeping')
+            time.sleep(1)
+
+    def test_request_feed(self):
+        feed = Feed('test', 'http://rss.cnn.com/rss/cnn_topstories.rss')
+        self.gatherer.request(feed)
+        while not self.mock_parent.on_item_scraped.called:
+            print('Feed Sleeping')
+            time.sleep(1)

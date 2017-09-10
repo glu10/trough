@@ -18,6 +18,8 @@
 
 from math import floor
 
+from gi import require_version
+require_version('Gtk', '3.0')
 from gi.repository import Gdk, GLib, GObject, Gtk
 
 from gatherer import Gatherer
@@ -35,29 +37,24 @@ class MainWindow(Gtk.Window):
     def __init__(self, preferences, cache, **kwargs):
         Gtk.Window.__init__(self, **kwargs)
 
-        # Signals
-        self.connect('key_press_event', self.on_key_press)
-
-        self.set_good_default_size()
-        self.set_window_icon()
         self.preferences = preferences
-        self.css_provider = self.create_css()
-        self.header_bar = self.create_header()
-
         self.cache = cache
-
         self.gatherer = Gatherer(self)
-        feeds = self.preferences.feeds()
-        if feeds:
-            for feed in feeds:
-                self.gatherer.request(feed)
-            self.gatherer.start()
-        else:
-            # TODO: Decide how to display a message prompting the user to add a feed
-            pass
+
+        self.connect_signals()
+        self.prepare_appearance()
+
+        self.css_provider = self.create_css()
         self.current_view = None
         self.switch_view()
 
+    def connect_signals(self):
+        self.connect('key_press_event', self.on_key_press)
+
+    def prepare_appearance(self):
+        self.set_good_default_size()
+        self.set_window_icon()
+        self.create_header()
 
     def set_good_default_size(self):
         screen = self.get_screen()
@@ -97,7 +94,7 @@ class MainWindow(Gtk.Window):
         views = {'Two-Pane': TwoPaneView, 'Three-Pane': ThreePaneView}
         view_class = views[view_key]
 
-        if type(self.current_view) != view_class:  # Actual switch?
+        if type(self.current_view) != view_class:  # Ensure not switching to same view.
             if self.current_view:
                 self.current_view.destroy_display()
 

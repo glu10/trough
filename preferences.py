@@ -21,9 +21,8 @@
 import copy
 import os
 
-import gi
-gi.require_version('Gtk', '3.0')
-gi.require_version('Gdk', '3.0')
+from gi import require_version
+require_version('Gtk', '3.0')
 from gi.repository import Gio, Gtk
 
 from feed import Feed
@@ -37,7 +36,7 @@ class Preferences:
     def __init__(self, load_from_file=False):
         self.preferences_directory = os.path.join(os.path.expanduser('~'), '.config', 'trough')
         self.preferences_file = 'preferences.json'
-        # TODO: Make load_from_file completely independant of default_preferences.
+        # TODO: Make load_from_file completely independent of default_preferences.
         self.preferences = self.default_preferences()
 
         if load_from_file:

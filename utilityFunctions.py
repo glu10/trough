@@ -23,13 +23,16 @@ import json
 import errno
 
 import feedparser
+
+from gi import require_version
+require_version('Gtk', '3.0')
+require_version('Gdk', '3.0')
 from gi.repository import Gdk, Gio, Gtk
 
 
 def feedparser_parse(uri):
     """
-    This function is only necessary because of a feedparser bug that occurs in Python versions <= 3.4
-    The try catch probes and attempts to mitigate the bug by switching which underlying XML parser is used.
+    Workaround for a libxml parser bug. Can probably be deleted.
     """
     try:
         content = feedparser.parse(uri)

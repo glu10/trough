@@ -18,50 +18,61 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-from collections import defaultdict
+import asyncio
 from threading import Thread
-from queue import LifoQueue, Empty
 
 import aiohttp
-import asyncio
-import async_timeout
-
-from gi.repository import Gdk
 from newspaper import fulltext
 
 from feed import Feed
 from item import Item
-import utilityFunctions
+from utilityFunctions import feedparser_parse
 
-class Gatherer:
+class Gatherer(Thread):
+
     def __init__(self, parent):
-        self.q = LifoQueue()
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
+        self.session = aiohttp.ClientSession(loop=self.loop)
+        self.parent = parent
+        super().__init__(target=self.work_loop, daemon=True)
+        super().start()
 
-    def start(self):
-        self.loop.run_until_complete(self.serve_requests())
+    def work_loop(self):
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
+        self.loop.close()
+
+    def stop(self):
+        self.loop.call_soon_threadsafe(self.loop.stop)
 
     def request(self, request):
-        print("Putting ", request)
-        self.q.put_nowait(request)
+        asyncio.run_coroutine_threadsafe(self.serve_request(request, self.session), self.loop)
 
-    async def serve_requests(self):
-        async with aiohttp.ClientSession() as session:
-            print("Got session", session)
-            req = self.q.get()
-            # TODO: Differentiate feed requests/item requests
-            print("Got out of queue with", req)
-            async with session.get(req.uri) as resp:
-                if isinstance(req, Item):
-                    html = await resp.text()
-                    req.article = fulltext(html)
-                    self.parent.on_item_scraped(req)
-                else:
-                    feed_xml = await resp.text()
-                    content = utilityFunctions.feedparser_parse(feed_xml)
-                    for entry in content['entries']:
-                        self.request(Item(req.name, d['title'], d['summary'], d['link']))
-                    
-    def stop(self):
-        self.loop.stop()
+    def batch_requests(self, requests, session):
+        return asyncio.gather(*[self.serve_request(r, session) for r in requests])
+
+    async def serve_request(self, request, session):
+        async with session.get(request.uri) as resp:
+            response_text = await resp.text()
+            await self.service(request, session, response_text)
+
+    async def service(self, request, session, response_text):
+        if isinstance(request, Item):
+            self.service_item(request, response_text)
+        elif isinstance(request, Feed):
+            await self.service_feed(request, session, response_text)
+        else:
+            raise ValueError('Unknown request sent to Gatherer.')
+
+    def service_item(self, item, html):
+        item.article = fulltext(html)
+        self.parent.on_item_scraped(item)
+
+    async def service_feed(self, feed, session, feed_xml):
+        content = feedparser_parse(feed_xml)
+        items = []
+        for entry in content['entries']:
+            items.append(
+                    Item(feed.name, entry['link'], entry['title']))
+        await self.batch_requests(items, session)
 
