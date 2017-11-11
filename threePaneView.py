@@ -23,12 +23,16 @@ from gi.repository import Gdk, Gtk
 from twoPaneView import TwoPaneView
 
 
-class ThreePaneView(TwoPaneView):
-    """ Pane 1: Feed names. Pane 2: Items of selected feed name. Pane 3: Contents of the selected item.
-        Panes 2-3 are TwoPaneView, slightly modified through overridden functions. """
-    def __init__(self, preferences, gatherer):
-        self.label_store = Gtk.ListStore(str)
-        self.label_view = self.create_view(self.label_store, 'Feeds', text=0)
+class ThreePaneView(TwoPaneView): # TODO: Composition over inheritance
+    """
+    Pane 1: Feed names.
+    Pane 2: Items of selected feed name.
+    Pane 3: Contents of the selected item.
+    """
+
+    def __init__(self, news_store, appearance_preferences):
+        self.news_store = news_store 
+        self.label_view = self.create_view(self.news_store.model(), 'Feeds', text=0)
         self.label_view.set_name('labelview')  # For CSS
         self.label_scroll = self.create_headline_box(self.label_view, 20, 200)
         self.label_changed_handler = None
@@ -36,15 +40,15 @@ class ThreePaneView(TwoPaneView):
         self.label_view.grab_focus()
         self.focused_index = 0
 
-        super().__init__(preferences, gatherer)  # calling after creating label_view because of update_appearance()
+        super().__init__(news_store, appearance_preferences)
 
         self.top_pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         self.top_pane.pack1(self.label_scroll, resize=False, shrink=False)
         self.top_pane.pack2(self.headline_content_pane, resize=False, shrink=False)  # essentially packs in a Two-Pane
 
     @staticmethod
-    def create_view(store, label, **kwargs):
-        view = Gtk.TreeView(model=store)
+    def create_view(model, label, **kwargs):
+        view = Gtk.TreeView(model=model)
         cell = Gtk.CellRendererText()
         col = Gtk.TreeViewColumn(label, cell, **kwargs)
         view.append_column(col)
@@ -52,11 +56,7 @@ class ThreePaneView(TwoPaneView):
 
     @staticmethod
     def create_headline_view(store):
-        return ThreePaneView.create_view(store, 'Headlines', text=0, foreground_rgba=2)
-
-    @staticmethod
-    def create_headline_store():
-        return Gtk.ListStore(str, int, Gdk.RGBA)
+        return ThreePaneView.create_view(store, 'Headlines', text=1)
 
     def toggle_label_listening(self):
         self.label_changed_handler = self.toggle_tree_view_listening(self.label_view,
@@ -70,18 +70,11 @@ class ThreePaneView(TwoPaneView):
             widgets[changed_pos].grab_focus()
             self.focused_index = changed_pos
 
-    def refresh(self):
-        self.clear_store(self.label_store, self.toggle_label_listening)
-        super().refresh()
-
     def top_level(self):
         return self.top_pane
 
     def get_info_from_headline(self, headline):
         self.last_item_index = headline[1]
-
-    def color_headline(self, headline, color):
-        headline[2] = color
 
     def show_new_content(self, tree_view):
         self.focused_index = 1  # Correctly anchors left/right keyboard shortcut if the mouse was used.
@@ -93,32 +86,3 @@ class ThreePaneView(TwoPaneView):
         if model and it:
             self.last_item_feed_name = model[it][0]
             self.headline_view.do_unselect_all(self.headline_view)
-            self.clear_store(self.headline_store, self.toggle_headline_listening)
-            feed = self.preferences.get_feed(self.last_item_feed_name)
-            if feed:
-                feed.sort_items()  # drives read stories to the bottom of the list
-                ap = self.appearance()
-                for pos, item in enumerate(feed.items):
-                    self.headline_store.append([item.title, pos, item.get_color(ap)])
-
-    def receive_feed(self, feed):
-        if self.mark_feed(feed):
-            self.label_store.append([feed.name])
-
-    def update_appearance(self, appearance_dict):
-        # Delete old feeds that got removed
-        feed_model = self.label_view.get_model()
-        for it in feed_model:
-            if not self.preferences.get_feed(it[0]):
-                feed_model.remove(it.iter)
-
-        model = self.headline_view.get_model()
-        feed = self.preferences.get_feed(self.last_item_feed_name)
-        if feed and feed.items:
-            for it in model:
-                item = feed.items[it[1]]
-                if item:
-                    self.color_headline(it, item.get_color(appearance_dict))
-        elif not feed:
-            for it in model:
-                model.remove(it.iter)

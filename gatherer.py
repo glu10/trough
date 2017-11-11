@@ -40,6 +40,7 @@ class Gatherer(Thread):
     def work_loop(self):
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
+        self.session.close()
         self.loop.close()
 
     def stop(self):

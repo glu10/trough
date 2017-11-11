@@ -26,21 +26,20 @@ from textFormat import TextFormat
 
 class NewsView(metaclass=ABCMeta):
 
-    def __init__(self, preferences, gatherer):
-        self.preferences = preferences
-        self.gatherer = gatherer
-        self.received_feeds = set()  # Used to mask a feed being received multiple times due to loose coupling
+    def __init__(self, news_store, appearance_preferences):
+        self.news_store = news_store
+        self.appearance_preferences = appearance_preferences 
         self.last_item_index = -1
         self.last_item_feed_name = None
         self.content_view = None
 
     def appearance(self):
-        return self.preferences.appearance_preferences()
+        return self.appearance_preferences
 
     @abstractmethod
-    def top_level(self):
+    def change_position(self, delta):
         """
-        Return the top-level GUI container of this component
+        Changes which pane within a view currently has focus (used with left/right keys).
         """
 
     def destroy_display(self):
@@ -52,12 +51,7 @@ class NewsView(metaclass=ABCMeta):
             child.destroy()
         top.destroy()
 
-    @abstractmethod
-    def change_position(self, delta):
-        """
-        Changes which pane within a view currently has focus (used with left/right keys).
-        """
-
+    
     def open_link(self, url):
         """
         Open the provided URL in a browser.
@@ -65,52 +59,16 @@ class NewsView(metaclass=ABCMeta):
         if url:
             open_new_tab(url)
 
-    def get_then_open_link(self):
-        """
-        Retrieves the currently active story's url, then calls open_link
-        """
-        pass
-
-    def populate(self, feeds):
-        """
-        Prepare already retrieved information for display
-        """
-        for feed in feeds:
-            if feed.items:
-                self.receive_feed(feed)
-
-    @abstractmethod
-    def refresh(self):
-        """
-        Clear the current contents of the view and requests fresh items
-        """
-        self.received_feeds.clear()
-        self.last_item_index = -1
-        self.last_item_feed_name = None
-
-    def mark_feed(self, feed):
-        """
-        Mark a feed as seen to prevent duplicate feeds.
-        A duplicate can occur due to the loose coupling between the gatherer and the view. Currently, any duplicates are
-        simply ignored since the time between the feed retrievals must have been short (back-to-back refreshes) and even
-        if potential differences did exist, it wouldn't be worth interrupting the user with the changes.
-        """
-        fresh = feed.name not in self.received_feeds
-        if fresh:
-            self.received_feeds.add(feed.name)
-        return fresh
-
-    def receive_article(self, item):
-        """
-        A worker thread delivered an article to the view, see if it is current then display it if so
-        """
-        assert(self.content_view is not None)
-        current_item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
-        if item == current_item:
-            TextFormat.prepare_content_display(item, self.content_view)
-
     @abstractmethod
     def show_new_content(self, selection):
         """
         Display an item's content.
         """
+
+    @abstractmethod
+    def top_level(self):
+        """
+        Return the top-level GUI container of this component
+        """
+
+

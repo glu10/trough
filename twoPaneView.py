@@ -27,14 +27,16 @@ from utilityFunctions import string_to_RGBA
 
 class TwoPaneView(NewsView):
     """ Pane 1: A list of RSS items (Feed name | Headline). Pane 2: Contents of the selected item. """
-    def __init__(self, preferences, gatherer):
-        super().__init__(preferences, gatherer)
+
+    def __init__(self, news_store, appearance_preferences):
+        super().__init__(news_store, appearance_preferences)
 
         # GUI components
-        self.headline_store = self.create_headline_store()
-        self.headline_view = self.create_headline_view(self.headline_store)
-        self.headline_view.set_name('headlineview')  # For CSS
+        self.headline_view = self.create_headline_view(self.news_store.model())
+        self.headline_view.set_name('headlineview')  # For CSS TODO: change
+
         self.headline_scroll = self.create_headline_box(self.headline_view, 400, 200)
+
         self.headline_changed_handler = None
         self.toggle_headline_listening()
 
@@ -43,26 +45,9 @@ class TwoPaneView(NewsView):
         self.headline_content_pane.pack1(self.headline_scroll, resize=False, shrink=False)  # Left
         self.headline_content_pane.pack2(self.content_scroll, resize=True, shrink=True)  # Right
 
-        self.update_appearance(preferences.appearance_preferences())
-
     @staticmethod
-    def create_headline_store():
-        return Gtk.ListStore(str, str, int, Gdk.RGBA)  # feed name, item title, item position, item color
-
-    @staticmethod
-    def clear_store(store, listening_toggle_func):  # TODO: Find better way to clear store
-        """
-        There has to be a better way to do this. Clearing the store causes the cursor-changed signal to get
-        called over and over and over if we have a signal listener for it (which is horribly wasteful),
-        so just toggle the listener off then back on to avoid the problem.
-        """
-        listening_toggle_func()
-        store.clear()
-        listening_toggle_func()
-
-    @staticmethod
-    def create_headline_view(headline_store):
-        tree_view = Gtk.TreeView(model=headline_store)
+    def create_headline_view(model):
+        tree_view = Gtk.TreeView(model=model)
         columns = ('Feeds', 'Headlines')
         for i in range(len(columns)):
             cell = Gtk.CellRendererText()
@@ -112,38 +97,13 @@ class TwoPaneView(NewsView):
         else:
             self.content_view.grab_focus()
 
-    def refresh(self):
-        self.clear_store(self.headline_store, self.toggle_headline_listening)
-        TextFormat.empty(self.content_view)
-        super().refresh()
-
-    def receive_item(self, item):
-            self.headline_store.append([item.feed_name, item.title, 0, item.get_color(self.appearance())])
-
     def get_info_from_headline(self, headline):
         self.last_item_feed_name = headline[0]
         self.last_item_index = headline[2]
-
-    def color_headline(self, headline, color):
-        headline[3] = color
 
     def show_new_content(self, tree_view):
         model, it = tree_view.get_selection().get_selected()
         if model and it:
             self.get_info_from_headline(model[it])
             self.color_headline(model[it], string_to_RGBA(self.appearance()['Read Color']))
-            # TODO remove upcall, actually store the item information where we need it
-            item = self.gatherer.item(self.last_item_feed_name, self.last_item_index)
-            if item.article:
-                TextFormat.prepare_content_display(item, self.content_view)
-            else:
-                self.gatherer.request(item)
-
-    def update_appearance(self, appearance_dict):
-        model = self.headline_view.get_model()
-        for it in model:
-            item = self.gatherer.item(it[0], it[2])
-            if item:
-                it[3] = item.get_color(appearance_dict)
-            else:  # This feed was removed
-                model.remove(it.iter)
+            TextFormat.prepare_content_display(item, self.content_view)

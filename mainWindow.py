@@ -22,8 +22,9 @@ from gi import require_version
 require_version('Gtk', '3.0')
 from gi.repository import Gdk, GLib, GObject, Gtk
 
-from gatherer import Gatherer
 from feedDialog import FeedDialog
+from gatherer import Gatherer
+from newsStore import NewsStore
 from threePaneView import ThreePaneView
 from twoPaneView import TwoPaneView
 from preferencesWindow import PreferencesWindow
@@ -39,6 +40,8 @@ class MainWindow(Gtk.Window):
 
         self.preferences = preferences
         self.cache = cache
+
+        self.news_store = NewsStore()
         self.gatherer = Gatherer(self)
 
         self.connect_signals()
@@ -46,7 +49,7 @@ class MainWindow(Gtk.Window):
 
         self.css_provider = self.create_css()
         self.current_view = None
-        self.switch_view()
+        self.switch_view(self.news_store, self.preferences)
 
     def connect_signals(self):
         self.connect('key_press_event', self.on_key_press)
@@ -86,11 +89,12 @@ class MainWindow(Gtk.Window):
         except GLib.GError:  # No RSS icon found
             pass
 
-    def switch_view(self):
+    def switch_view(self, news_store, preferences):
         """
         Activates the view currently chosen in the preferences and returns it.
         """
-        view_key = self.preferences.appearance_preferences()['View']
+        appearance_prefs = preferences.appearance_preferences()
+        view_key = appearance_prefs['View']
         views = {'Two-Pane': TwoPaneView, 'Three-Pane': ThreePaneView}
         view_class = views[view_key]
 
@@ -98,8 +102,7 @@ class MainWindow(Gtk.Window):
             if self.current_view:
                 self.current_view.destroy_display()
 
-            self.current_view = view_class(self.preferences, self.gatherer)
-            self.current_view.populate(self.preferences.feed_list())
+            self.current_view = view_class(news_store, appearance_prefs)
             self.add(self.current_view.top_level())
             self.show_all()
 
