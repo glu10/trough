@@ -18,41 +18,45 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
+from gi import require_version
+
+require_version('Gtk', '3.0')
+from gi.repository import Gtk
+
 from abc import ABCMeta, abstractmethod
 from webbrowser import open_new_tab
+from typing import Any, Dict
 
-from textFormat import TextFormat
+from newsStore import NewsStore
 
 
 class NewsView(metaclass=ABCMeta):
-
-    def __init__(self, news_store, appearance_preferences):
+    def __init__(self, news_store: NewsStore, appearance_preferences: Dict[str, str]):
         self.news_store = news_store
-        self.appearance_preferences = appearance_preferences 
+        self.appearance_preferences = appearance_preferences
         self.last_item_index = -1
         self.last_item_feed_name = None
         self.content_view = None
 
-    def appearance(self):
+    def appearance(self) -> Dict[str, str]:
         return self.appearance_preferences
 
     @abstractmethod
-    def change_position(self, delta):
+    def change_position(self, delta: int) -> None:
         """
         Changes which pane within a view currently has focus (used with left/right keys).
         """
 
-    def destroy_display(self):
+    def destroy_display(self) -> None:
         """
         Destroy the widgets related to this display.
         """
         top = self.top_level()
-        for child in top:
+        for child in top.get_children():
             child.destroy()
         top.destroy()
 
-    
-    def open_link(self, url):
+    def open_link(self, url: str) -> None:
         """
         Open the provided URL in a browser.
         """
@@ -60,15 +64,13 @@ class NewsView(metaclass=ABCMeta):
             open_new_tab(url)
 
     @abstractmethod
-    def show_new_content(self, selection):
+    def show_new_content(self, selection: Any):
         """
         Display an item's content.
         """
 
     @abstractmethod
-    def top_level(self):
+    def top_level(self) -> Gtk.Container:
         """
         Return the top-level GUI container of this component
         """
-
-

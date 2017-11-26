@@ -18,37 +18,31 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-from collections import defaultdict
-from itertools import chain
+from typing import Dict, List
 
 
 class Feed:
     """ An RSS Feed that contains RSS Items """
     serializable_attributes = ['name', 'uri']
 
-    def __init__(self, name, uri):
+    def __init__(self, name: str, uri: str):
         self.name = name  # Externally enforced as unique
         self.uri = uri
 
     @classmethod
-    def from_dict(cls, attribute_dict):
+    def from_dict(cls, attributes: Dict[str, Dict[str, str]]):
         """ Deserialization """
-        try:
-            return Feed(
-                    *[attribute_dict[attribute] for attribute
-                        in cls.serializable_attributes])
-        except KeyError as e:
-            missing_key = e.args[0]
-            raise RuntimeError(
-                    'Feed deserialization failed: {}, missing required key {}'
-                    .format(attribute_dict, missing_key))
+        return Feed(**attributes)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """ Serialization """
         return {'name': self.name, 'uri': self.uri}
 
-    def to_value_list(self):
+    def to_value_list(self) -> List[str]:
         return [self.name, self.uri]
 
     def __eq__(self, other):
-        return self.name == other.name
+        if isinstance(other, Feed):
+            return self.name == other.name
+        else:
+            return NotImplemented

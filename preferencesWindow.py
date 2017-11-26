@@ -18,14 +18,30 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
+from typing import Any
+
+from gi import require_version
+
+require_version('Gtk', '3.0')
 from gi.repository import Gtk
-from preferencesCategories import AppearancePreferences, FeedsPreferences, FiltrationPreferences
+
+from cache import Cache
+from preferences import Preferences
+from preferencesCategories import AppearancePreferences, FeedsPreferences
 
 
 class PreferencesWindow(Gtk.Dialog):
-    def __init__(self, parent, config, cache):
-        Gtk.Dialog.__init__(self, 'Preferences', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                                             'Save Changes', Gtk.ResponseType.OK))
+    # TODO: Refactor this, why Preferences.preferences?
+    def __init__(self, parent: Any, config: Preferences, cache: Cache):
+        Gtk.Dialog.__init__(
+            self,
+            'Preferences',
+            parent,
+            0,
+            (Gtk.STOCK_CANCEL,
+             Gtk.ResponseType.CANCEL,
+             'Save Changes',
+             Gtk.ResponseType.OK))
         self.config = config
         self.preferences = config.preferences
         self.parent = parent
@@ -34,7 +50,6 @@ class PreferencesWindow(Gtk.Dialog):
         self.preferences_categories = [
             AppearancePreferences(self, self.preferences),
             FeedsPreferences(self, self.preferences, cache),
-            FiltrationPreferences(self, self.preferences),
         ]
 
         self.notebook = Gtk.Notebook()
@@ -45,7 +60,7 @@ class PreferencesWindow(Gtk.Dialog):
         content.pack_start(self.notebook, True, True, 0)
         self.show_all()
 
-    def apply_choices(self):
+    def apply_choices(self) -> None:
         """
         Apply the selected preferences to the current session, and make the selections persistent.
         """
@@ -54,5 +69,4 @@ class PreferencesWindow(Gtk.Dialog):
         self.config.update_preferences(self.preferences)
 
         self.parent.update_css()
-        view = self.parent.switch_view()
-        view.update_appearance(self.preferences['Appearance'])
+        self.parent.switch_view(self.parent.news_store, self.config)

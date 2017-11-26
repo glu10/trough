@@ -18,22 +18,28 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-from gi.repository import Gdk, Gtk, Pango
+from typing import Callable, Optional
 
+from gi import require_version
+
+require_version('Gtk', '3.0')
+require_version('Gdk', '3.0')
+from gi.repository import Gtk, Pango
+
+from newsStore import NewsStore
 from newsView import NewsView
 from textFormat import TextFormat
-from utilityFunctions import string_to_RGBA
 
 
 class TwoPaneView(NewsView):
     """ Pane 1: A list of RSS items (Feed name | Headline). Pane 2: Contents of the selected item. """
 
-    def __init__(self, news_store, appearance_preferences):
+    def __init__(self, news_store: NewsStore, appearance_preferences):
         super().__init__(news_store, appearance_preferences)
 
         # GUI components
         self.headline_view = self.create_headline_view(self.news_store.model())
-        self.headline_view.set_name('headlineview')  # For CSS TODO: change
+        self.headline_view.set_name('headlineview')  # For CSS
 
         self.headline_scroll = self.create_headline_box(self.headline_view, 400, 200)
 
@@ -46,20 +52,21 @@ class TwoPaneView(NewsView):
         self.headline_content_pane.pack2(self.content_scroll, resize=True, shrink=True)  # Right
 
     @staticmethod
-    def create_headline_view(model):
+    def create_headline_view(model: Gtk.TreeModel) -> Gtk.TreeView:
         tree_view = Gtk.TreeView(model=model)
-        columns = ('Feeds', 'Headlines')
-        for i in range(len(columns)):
+        labels = ('Feeds', 'Headlines')
+        for i, label in enumerate(labels):
             cell = Gtk.CellRendererText()
             if i == 0:  # Label
                 cell.props.weight_set = True
                 cell.props.weight = Pango.Weight.BOLD
-            col = Gtk.TreeViewColumn(columns[i], cell, text=i, foreground_rgba=3)
+                i = i - 1
+            col = Gtk.TreeViewColumn(label, cell, text=i + 1)
             tree_view.append_column(col)
         return tree_view
 
     @staticmethod
-    def create_headline_box(tree_view, width, height):
+    def create_headline_box(tree_view: Gtk.TreeView, width: int, height: int) -> Gtk.ScrolledWindow:
         headline_scroll = Gtk.ScrolledWindow()
         headline_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.ALWAYS)
         headline_scroll.set_size_request(width, height)
@@ -67,7 +74,7 @@ class TwoPaneView(NewsView):
         return headline_scroll
 
     @staticmethod
-    def create_content_box():
+    def create_content_box() -> (Gtk.ScrolledWindow, Gtk.TextView):
         text_scroll = Gtk.ScrolledWindow()
         text_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.ALWAYS)
         text_view = TextFormat.prepare_content_display(None, None)
@@ -75,35 +82,30 @@ class TwoPaneView(NewsView):
         return text_scroll, text_view
 
     @staticmethod
-    def toggle_tree_view_listening(tree_view, handler_id, function):
-        if handler_id:  # The handler exists, stop listening
+    def toggle_tree_view_listening(tree_view: Gtk.TreeView, handler_id: int, func: Callable) -> Optional[int]:
+        if handler_id is not None:  # The handler exists, stop listening
             tree_view.disconnect(handler_id)
             return None
         else:  # The handler doesn't exist, start listening
-            return tree_view.connect('cursor-changed', function)
+            return tree_view.connect('cursor-changed', func)
 
     def toggle_headline_listening(self):
         self.headline_changed_handler = self.toggle_tree_view_listening(self.headline_view,
                                                                         self.headline_changed_handler,
                                                                         self.show_new_content)
 
-    def top_level(self):
+    def top_level(self) -> Gtk.Container:
         return self.headline_content_pane
 
-    def change_position(self, delta):
+    def change_position(self, delta: int) -> None:
         """ Switches keyboard focus between left and right pane """
         if delta < 0:
             self.headline_view.grab_focus()
         else:
             self.content_view.grab_focus()
 
-    def get_info_from_headline(self, headline):
-        self.last_item_feed_name = headline[0]
-        self.last_item_index = headline[2]
-
-    def show_new_content(self, tree_view):
+    def show_new_content(self, tree_view: Gtk.TreeView) -> None:
         model, it = tree_view.get_selection().get_selected()
         if model and it:
-            self.get_info_from_headline(model[it])
-            self.color_headline(model[it], string_to_RGBA(self.appearance()['Read Color']))
+            item = self.news_store.row_to_item(model[it])
             TextFormat.prepare_content_display(item, self.content_view)

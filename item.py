@@ -18,12 +18,18 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
+from typing import Iterable
+
+
 class Item:
     """ An RSS item """
 
-    def __init__(self, feed_name, uri, title='', description='', article=None):
+    def __init__(self, feed_name: str, uri: str, title: str = '', description: str = '', article: str = None):
         self.feed_name = feed_name
         self.uri = uri
         self.title = title
         self.description = description
-        self.article = None
+        self.article = article
+
+    def __iter__(self) -> Iterable[str]:
+        return [self.feed_name, self.uri, self.title, self.description, self.article]

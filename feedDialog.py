@@ -18,19 +18,24 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
+from typing import Any, List
 
+import feedparser
+from gi import require_version
+
+require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
 from feed import Feed
-import utilityFunctions
+from utilityFunctions import decision_popup
 
 
 class FeedDialog(Gtk.Dialog):
     """ A Dialog for adding or editing information related to an RSS feed. """
 
-    def __init__(self, parent, feed_container, feed=None):
+    def __init__(self, parent: Gtk.Widget, feed_container: Any, feed: Feed = None):
         Gtk.Dialog.__init__(self, 'Add Feed', parent, 0, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                            Gtk.STOCK_OK, Gtk.ResponseType.OK))
+                                                          Gtk.STOCK_OK, Gtk.ResponseType.OK))
         self.set_default_size(150, 100)
         ok_button = self.get_widget_for_response(response_id=Gtk.ResponseType.OK)
         ok_button.set_can_default(True)
@@ -51,14 +56,14 @@ class FeedDialog(Gtk.Dialog):
 
         self.error_label = Gtk.Label('')
         self.error_label.set_markup('<span color="red">Fill in the missing information.</span>')
-        grid.attach(self.error_label, 0, len(self.rows)+1, num_columns, 1)
+        grid.attach(self.error_label, 0, len(self.rows) + 1, num_columns, 1)
 
         box = self.get_content_area()
         box.add(grid)
         box.show_all()
         self.error_label.hide()  # hidden initially, only shown if information is incomplete
 
-    def get_response(self):
+    def get_response(self) -> Feed:
         """ Primary external call. Returns a valid Feed object upon success or None otherwise. """
         ret = None
         if self.run() == Gtk.ResponseType.OK:
@@ -66,11 +71,11 @@ class FeedDialog(Gtk.Dialog):
         self.destroy()
         return ret
 
-    def on_dialog_response(self, parent, response):
+    def on_dialog_response(self, parent: Gtk.Widget, response: Gtk.ResponseType):
         if response == Gtk.ResponseType.OK and not self.verify():
             self.emit_stop_by_name('response')  # stops the signal from  exiting the run() loop
 
-    def verify(self):
+    def verify(self) -> bool:
         """ Checks each row for correctness. Issues a warning to the user if correctness is conditional. """
         correct = True
         warning_list = list()
@@ -88,37 +93,37 @@ class FeedDialog(Gtk.Dialog):
             return self.warn(warning_list)
         return correct
 
-    def warn(self, warning_list):
-        warning_list.append('Add feed anyway?')
-        decision = utilityFunctions.decision_popup(self, 'Warning!', '\n'.join(warning_list))
-        warning_list.clear()
+    def warn(self, warnings: List[str]):
+        warnings.append('Add feed anyway?')
+        decision = decision_popup(self, 'Warning!', '\n'.join(warnings))
+        warnings.clear()
         return decision
 
 
 class DialogRow:
-    def __init__(self, grid, label_text, interactive_element):
+    def __init__(self, grid: Gtk.Grid, label_text: str, interactive_element: Gtk.Widget):
         self.label = Gtk.Label(label_text, xalign=0)
         self.interactive = interactive_element
         self.interactive.set_activates_default(True)
         grid.add(self.label)
         grid.attach_next_to(self.interactive, self.label, Gtk.PositionType.RIGHT, 1, 1)
 
-    def fill_in(self, feed):
+    def fill_in(self, feed: Feed) -> None:
         """ Set known information for the interactive element. """
         pass
 
-    def mark_red(self, b):
+    def mark_red(self, b: bool) -> None:
         """ Color/uncolor the label of this row to be red for error indication. """
         if b:
             self.label.set_markup('<span color="red">' + self.label.get_text() + '</span>')
         else:
             self.label.set_text(self.label.get_text())  # Make label text normal (non-red)
 
-    def retrieve(self):
+    def retrieve(self) -> str:
         """ Get the relevant information from the interactive element. """
         pass
 
-    def verify(self, warning_list):
+    def verify(self, warning_list: List[str]) -> bool:
         """ Is the information in the interactive element correct? If conditional, append a warning. """
         return True  # vacuously true
 
@@ -131,21 +136,21 @@ class FeedDialogRow(DialogRow):
         self.preexisting = None  # Feeds that already exist (for enforcing uniqueness)
         self.filled_in_name = None  # Remember to protect uniqueness
 
-    def fill_in(self, feed):
+    def fill_in(self, feed: Feed) -> None:
         self.filled_in_name = feed.name
         self.interactive.set_text(self.filled_in_name)
 
-    def retrieve(self):
+    def retrieve(self) -> str:
         return self.interactive.get_text()
 
-    def set_preexisting_feeds(self, container):
+    def set_preexisting_feeds(self, container):  # FIXME: ListStore or dict/set is gross, split up
         """If container is not a set/dictionary, make it one for O(1) existance checking. """
         if isinstance(container, Gtk.ListStore):
             container = {row[0] for row in container}
         self.preexisting = container
         return self
 
-    def verify(self, warning_list):
+    def verify(self, warning_list: List[str]) -> bool:
         feed_name = self.retrieve()
         if not feed_name:
             return False  # A blank feed name is always incorrect
@@ -157,19 +162,19 @@ class FeedDialogRow(DialogRow):
 class UriDialogRow(DialogRow):
     """ GUI element for entering an RSS feed's URI. """
 
-    def fill_in(self, feed):
+    def fill_in(self, feed: Feed) -> None:
         self.interactive.set_text(feed.uri)
 
-    def retrieve(self):
+    def retrieve(self) -> str:
         return self.interactive.get_text()
 
-    def verify(self, warning_list):
+    def verify(self, warnings: List[str]) -> bool:
         uri = self.retrieve()
         if not uri:
             return False  # A blank URI is always incorrect
         elif not (uri.startswith('/') or uri.startswith('http://') or uri.startswith('https://')):
-                uri = 'http://' + uri  # Attempt to complete the URI #TODO: Instead of preemptively trying to fix it, probe it as is first.
-        content = utilityFunctions.feedparser_parse(uri)  # Probe the URI
+            uri = 'http://' + uri  # Attempt to complete the URI #TODO: Instead of preemptively trying to fix it, probe it as is first.
+        content = feedparser.parse(uri)  # Probe the URI
         if not content:
-            warning_list.append('The URI ' + uri + ' did not contain a valid RSS feed.')
+            warnings.append('The URI ' + uri + ' did not contain a valid RSS feed.')
         return True

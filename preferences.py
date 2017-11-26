@@ -20,20 +20,23 @@
 
 import copy
 import os
+from typing import Dict, List, Optional, Union
 
 from gi import require_version
 require_version('Gtk', '3.0')
 from gi.repository import Gio, Gtk
 
+
 from feed import Feed
-from utilityFunctions import load_file, write_file
+from utilityFunctions import ensured_read_json_file, write_json_file
 
 
+# FIXME: Refactor nested preferences dict to member variables
 class Preferences:
     """ Deals with configuration data that survives between sessions
         Examples are appearance settings, added feeds, filters, etc. """
 
-    def __init__(self, load_from_file=False):
+    def __init__(self, load_from_file: bool = False):
         self.preferences_directory = os.path.join(os.path.expanduser('~'), '.config', 'trough')
         self.preferences_file = 'preferences.json'
         # TODO: Make load_from_file completely independent of default_preferences.
@@ -43,16 +46,15 @@ class Preferences:
             self.load_preferences()
 
     @staticmethod
-    def default_preferences():
+    def default_preferences() -> Dict[str, Dict[str, Union[str, Feed]]]:
         preferences = {
             'Appearance': Preferences.default_appearance_preferences(),
             'Feeds': Preferences.default_feeds_preferences(),
-            'Filters': Preferences.default_filtration_preferences(),
         }
         return preferences
 
     @staticmethod
-    def default_appearance_preferences():
+    def default_appearance_preferences() -> Dict[str, str]:
         gs = Gio.Settings('org.gnome.desktop.interface')
         default_font = gs.get_string('font-name')
         document_font = gs.get_string('document-font-name')
@@ -61,7 +63,7 @@ class Preferences:
         elif not document_font and default_font:
             document_font = default_font
 
-        p = {
+        return {
             'View': 'Three-Pane',
             'Category Font': '10 Sans, sans-serif',
             'Headline Font': '10 Sans, sans-serif',
@@ -73,33 +75,24 @@ class Preferences:
             'Read Color': '#75507b',  # a 'clicked-link' purple
             'Filtered Color': '#c02f1d',  # a dull uninviting red
         }
-        return p
 
     @staticmethod
-    def default_feeds_preferences():
+    def default_feeds_preferences() -> Dict[str, Feed]:
         return dict()
 
-    @staticmethod
-    def default_filtration_preferences():
-        return list()
-
-    def appearance_preferences(self):
+    def appearance_preferences(self) -> Dict[str, str]:
         return self.preferences['Appearance']
 
-    def feeds_preferences(self):
+    def feeds_preferences(self) -> Dict[str, Feed]:
         return self.preferences['Feeds']
 
-    def filtration_preferences(self):
-        return self.preferences['Filters']
-
-    def load_preferences(self):
-        self.preferences = load_file(
+    def load_preferences(self) -> None:
+        self.preferences = ensured_read_json_file(
                 self.preferences_directory,
                 self.preferences_file,
                 self.preferences)
-        print(self.preferences['Feeds'])
 
-        if self.preferences['Feeds'] is None:
+        if 'Feeds' not in self.preferences:
             self.preferences['Feeds'] = self.default_feeds_preferences()
         else:
             feed_object_dict = dict()
@@ -107,59 +100,43 @@ class Preferences:
                 feed_object_dict[feed_name] = Feed.from_dict(feed_attributes)
             self.preferences['Feeds'] = feed_object_dict
 
-        if self.preferences['Filters'] is None:
-            self.preferences['Filters'] = self.default_filtration_preferences()
-        else:
-            filter_objects = list()
-            for filt, case_sensitive, hide_matches in self.preferences['Filters']:
-                filter_objects.append(ItemFilter(filt, case_sensitive, hide_matches))
-            self.preferences['Filters'] = filter_objects
-
-    def feeds(self):
+    def feeds(self) -> dict:
         return self.preferences['Feeds']
 
-    def filters(self):
-        return self.preferences['Filters']
+    def feed_list(self) -> List[Feed]:
+        return list(self.feeds().values())
 
-    def feed_list(self):
-        return self.feeds().values()
-
-    def get_feed(self, name):
-        if name in self.feeds():
+    def get_feed(self, name: str) -> Optional[Feed]:
+        try:
             return self.feeds()[name]
-        else:
+        except KeyError:
             return None
 
-    def add_feed(self, feed):
+    def add_feed(self, feed: Feed) -> None:
         self.preferences['Feeds'][feed.name] = feed
         self.update_preferences(self.preferences)
 
-    def write_preferences(self):
-        write_file(
+    def write_preferences(self) -> None:
+        write_json_file(
                 self.preferences_directory,
                 self.preferences_file,
                 self.serialize_preferences(self.preferences))
 
-    def update_preferences(self, preferences):
+    def update_preferences(self, preferences: Dict[str, Dict[str, Union[str, Feed]]]) -> None:
         """ Convenience function """
-        assert(type(preferences) == dict)
         if preferences:
             self.preferences = preferences
             self.write_preferences()
 
     @staticmethod
-    def serialize_preferences(preferences):
+    def serialize_preferences(preferences) -> Dict[str, dict]:  # FIXME: Serialize doesn't return a string?
         temp = copy.copy(preferences)
         temp['Feeds'] = dict()
         for feed in preferences['Feeds'].values():
             temp['Feeds'][feed.name] = feed.to_dict()
-
-        temp['Filters'] = list()
-        for f in preferences['Filters']:
-            temp['Filters'].append([f.filter, f.case_sensitive, f.hide_matches])
         return temp
 
-    def get_appearance_css(self):
+    def get_appearance_css(self) -> bytes:
         ap = self.appearance_preferences()
         css = (
             '#storyview text, #labelview, #headlineview{\n'

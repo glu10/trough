@@ -17,32 +17,43 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
-import gi
-gi.require_version('Gtk', '3.0')
 
+from typing import List
+
+import gi
+
+gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
-class NewsStore():
+from item import Item
+
+
+class NewsStore:
     """ A centralized data repository of all viewable fetched content. """
 
     def __init__(self):
-        self.store = Gtk.TreeStore(
-                str, # Feed Name
-                str, # Item Title
-                str, # Item Content 
-                str) # Item URI
+        self.store = Gtk.ListStore(
+            str,  # Feed Name
+            str,  # Item URI
+            str,  # Item Title
+            str,  # Item Description
+            str, )  # Item Article
 
-    def add_feed(self, feed):
-        name = feed.name
-        for item in feed:
-            self.add_item(name, item)
-            
-    def add_item(self, feed_name, item):
-        self.store.append(
-            [feed_name,
+    def append(self, item: Item) -> None:
+        self.store.append([
+            item.feed_name,
+            item.uri,
             item.title,
-            item.article,
-            item.uri])
+            item.description,
+            item.article
+        ])
 
-    def model(self):
+    @staticmethod
+    def row_to_item(row: List[str]) -> Item:
+        return Item(*row)
+
+    def model(self) -> Gtk.TreeModel:
         return self.store
+
+    def clear(self) -> None:
+        self.store.clear()

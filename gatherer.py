@@ -20,44 +20,47 @@
 
 import asyncio
 from threading import Thread
+from typing import Awaitable, Union
 
 import aiohttp
+import feedparser
+from aiohttp import ClientSession
 from newspaper import fulltext
 
 from feed import Feed
 from item import Item
-from utilityFunctions import feedparser_parse
+from newsStore import NewsStore
+
 
 class Gatherer(Thread):
-
-    def __init__(self, parent):
+    def __init__(self, store: NewsStore):
         self.loop = asyncio.new_event_loop()
         self.session = aiohttp.ClientSession(loop=self.loop)
-        self.parent = parent
+        self.store = store
         super().__init__(target=self.work_loop, daemon=True)
         super().start()
 
-    def work_loop(self):
+    def work_loop(self) -> None:
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
         self.session.close()
         self.loop.close()
 
-    def stop(self):
+    def stop(self) -> None:
         self.loop.call_soon_threadsafe(self.loop.stop)
 
-    def request(self, request):
+    def request(self, request: Union[Feed, Item]) -> None:
         asyncio.run_coroutine_threadsafe(self.serve_request(request, self.session), self.loop)
 
-    def batch_requests(self, requests, session):
+    def batch_requests(self, requests, session: ClientSession) -> Awaitable:
         return asyncio.gather(*[self.serve_request(r, session) for r in requests])
 
-    async def serve_request(self, request, session):
+    async def serve_request(self, request, session: ClientSession) -> None:
         async with session.get(request.uri) as resp:
             response_text = await resp.text()
             await self.service(request, session, response_text)
 
-    async def service(self, request, session, response_text):
+    async def service(self, request: Union[Feed, Item], session: ClientSession, response_text: str) -> None:
         if isinstance(request, Item):
             self.service_item(request, response_text)
         elif isinstance(request, Feed):
@@ -65,15 +68,14 @@ class Gatherer(Thread):
         else:
             raise ValueError('Unknown request sent to Gatherer.')
 
-    def service_item(self, item, html):
+    def service_item(self, item: Item, html: str) -> None:
         item.article = fulltext(html)
-        self.parent.on_item_scraped(item)
+        self.store.append(item)
 
-    async def service_feed(self, feed, session, feed_xml):
-        content = feedparser_parse(feed_xml)
+    async def service_feed(self, feed: Feed, session: ClientSession, feed_xml: str) -> None:
+        content = feedparser.parse(feed_xml)
         items = []
         for entry in content['entries']:
             items.append(
-                    Item(feed.name, entry['link'], entry['title']))
+                Item(feed.name, entry['link'], entry['title']))
         await self.batch_requests(items, session)
-

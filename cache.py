@@ -19,80 +19,75 @@
 """
 
 import os
-
 from threading import RLock
-from utilityFunctions import load_file, write_file
+from typing import Any, Callable, Hashable, Optional
+
+from utilityFunctions import ensured_read_json_file, write_json_file
 
 
-def synchronize_cache(func):
-        def wrapper(self, *args):
-            with self.lock:
-                return func(self, *args)
-        return wrapper
+def synchronize_cache(func: Callable) -> Callable:
+    def wrapper(self, *args):
+        with self.lock:
+            return func(self, *args)
+
+    return wrapper
 
 
 class Cache:
-
-    def __init__(self, load_from_file=False):
+    def __init__(self, load_from_file: bool = False):
         self.cache_directory = os.path.join(os.path.expanduser('~'), '.cache', 'trough')
 
         self.cache_file = 'cache.json'
         self.cache = dict()
-        self.lock = RLock()  # Need an RLock as opposed to a Lock because of nested function calls
+        self.lock = RLock()
 
         if load_from_file:
             self.load_cache()
 
     @synchronize_cache
-    def clear(self):
+    def clear(self) -> None:
         """ Empties the current cache and the cache file """
         self.cache = dict()
         self.write_cache()
 
     @synchronize_cache
-    def put(self, identifier, item, fresh=True):
+    def put(self, identifier: Hashable, value: Any, fresh: bool = True):
         """ Put the item in the cache with the identifier. Fresh being true indicates that this item was not retrieved
             from the cache itself, so it should be persisted for at least one more session. """
-        assert(type(item) == list or type(item) == str)
         if identifier:
-            self.cache[identifier] = CacheItem(item, fresh)
+            self.cache[identifier] = CacheValue(value, fresh)
 
     @synchronize_cache
-    def query(self, identifier):
-        if identifier in self.cache:
+    def query(self, identifier: Hashable) -> Optional[Any]:
+        try:
             return self.cache[identifier].get()
-        else:
+        except KeyError:
             return None
 
     @synchronize_cache
     def load_cache(self):
         """ Loads the cache from the cache file """
-        previous = load_file(self.cache_directory, self.cache_file, dict())
+        previous = ensured_read_json_file(self.cache_directory, self.cache_file, dict())
 
         self.cache = dict()
-        for key, value in previous.items():
-            self.put(key, value, False)
+        for k, v in previous.items():
+            self.put(k, v, False)
 
     @synchronize_cache
     def write_cache(self):
         """ Write the cache to the cache file """
-        temp = dict()
-        for key, value in self.cache.items():
-            if value.should_keep():
-                temp[key] = value.item  # Unpack the item
-
-        write_file(self.cache_directory, self.cache_file, temp)
+        persisted = {k: v.value for k, v in self.cache.items() if v.should_keep}
+        write_json_file(self.cache_directory, self.cache_file, persisted)
 
 
-class CacheItem:
-    def __init__(self, item, used):
-        self.item = item
+class CacheValue:
+    def __init__(self, value: Any, used: bool):
+        self.value = value
         self.used = used
 
-    def get(self):
+    def get(self) -> Any:
         self.used = True
-        return self.item
+        return self.value
 
-    def should_keep(self):
+    def should_keep(self) -> bool:
         return self.used
-

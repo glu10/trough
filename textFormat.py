@@ -17,7 +17,13 @@
 
     Trough homepage: https://github.com/glu10/trough
 """
+
+from gi import require_version
+
+require_version('Gtk', '3.0')
 from gi.repository import Gtk, Pango
+
+from item import Item
 
 
 class TextFormat:
@@ -26,16 +32,11 @@ class TextFormat:
     """
 
     @staticmethod
-    def empty(text_view):
-        if text_view:
-            return text_view.set_buffer(Gtk.TextBuffer())
-
-    @staticmethod
-    def prepare_content_display(item, textview=None):
-        if textview is None:
+    def prepare_content_display(item: Item, existing_view: Gtk.TextView = None) -> Gtk.TextView:
+        if existing_view is None:
             text_view = Gtk.TextView()
         else:
-            text_view = textview
+            text_view = existing_view
 
         text_view.set_name('storyview')  # For CSS
 
@@ -58,25 +59,24 @@ class TextFormat:
         return text_view
 
     @staticmethod
-    def headline(headline, text_buffer):
+    def headline(headline: str, text_buffer: Gtk.TextBuffer) -> None:
         if headline:
-            center = text_buffer.create_tag("center", justification=Gtk.Justification.CENTER, weight=Pango.Weight.BOLD)
+            center = text_buffer.create_tag('center', justification=Gtk.Justification.CENTER, weight=Pango.Weight.BOLD)
             text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), headline, center)
 
     @staticmethod
-    def description(description, text_buffer):
+    def description(description: str, text_buffer: Gtk.TextBuffer) -> None:
         if description:
-            center = text_buffer.create_tag("description", justification=Gtk.Justification.CENTER)
-            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), "\n\n" + description, center)
+            center = text_buffer.create_tag('description', justification=Gtk.Justification.CENTER)
+            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), '\n\n' + description, center)
 
     @staticmethod
-    def article(article, text_buffer):
+    def article(article: str, text_buffer: Gtk.TextBuffer) -> None:
         if article:
-            text_buffer.insert(TextFormat.__pos(text_buffer), "\n\n")
-            paragraph = text_buffer.create_tag("paragraph", pixels_below_lines=5, pixels_above_lines=5)
-            for p in article:
-                text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), p + "\n", paragraph)
+            text_buffer.insert(TextFormat.__pos(text_buffer), '\n')
+            paragraph = text_buffer.create_tag('paragraph', pixels_below_lines=5, pixels_above_lines=5)
+            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), article + '\n', paragraph)
 
     @staticmethod
-    def __pos(text_buffer):  # Convenience function for readability
-            return text_buffer.get_end_iter()
+    def __pos(text_buffer: Gtk.TextBuffer) -> Gtk.TextIter:
+        return text_buffer.get_end_iter()

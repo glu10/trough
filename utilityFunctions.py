@@ -18,39 +18,21 @@
     Trough homepage: https://github.com/glu10/trough
 """
 
-import os
-import json
 import errno
-
-import feedparser
+import json
+import os
+from typing import Any, Callable
 
 from gi import require_version
+
 require_version('Gtk', '3.0')
 require_version('Gdk', '3.0')
 from gi.repository import Gdk, Gio, Gtk
 
-
-def feedparser_parse(uri):
-    """
-    Workaround for a libxml parser bug. Can probably be deleted.
-    """
-    try:
-        content = feedparser.parse(uri)
-    except TypeError:
-        if 'drv_libxml2' in feedparser.PREFERRED_XML_PARSERS:
-            feedparser.PREFERRED_XML_PARSERS.remove('drv_libxml2')
-            content = feedparser.parse(uri)
-    try:
-        if content['entries']:
-            return content
-    except (TypeError, KeyError):
-        return None
-
-
 """ FILE OPERATIONS """
 
 
-def ensure_directory_exists(directory):
+def ensure_directory_exists(directory: str):
     """ Checks to see if the given directory exists, and if it doesn't creates it. """
     try:
         os.makedirs(directory)
@@ -59,38 +41,21 @@ def ensure_directory_exists(directory):
             raise
 
 
-def load_file(containing_directory, filename, defaults):
-    """ Check if the specified file exists, and if it doesn't make a file with the default configuration """
-
-    ensure_directory_exists(containing_directory)
-
+def ensured_read_json_file(containing_directory: str, filename: str, defaults: Any):
+    """ Read a JSON file or pass back the defaults if the file doesn't exist. """
     file_path = os.path.join(containing_directory, filename)
-    data = dict()
+    if not os.path.isfile(file_path):
+        return defaults
 
-    # If the file doesn't exist or is empty
-    if not os.path.isfile(file_path) or os.stat(file_path).st_size == 0:
-        if defaults:  # If there are defaults, write them to replace the empty/nonexistent file
-            write_file(containing_directory, filename, defaults)
-            data = defaults
-        else:
-            return defaults  # Just fake as if we loaded the defaults
-    else:  # If there is a file
-        with open(file_path, 'r') as data_file:
-            try:
-                data = json.load(data_file)
-            except json.decoder.JSONDecodeError:
-                raise RuntimeError('Error parsing the JSON in ' + file_path + ', is it valid JSON?')
-            # Make sure that the information we are getting actually corresponds to real preferences.
-            if defaults and type(defaults == dict) and sorted(data.keys()) != sorted(defaults.keys()):
-                raise RuntimeError('Data in ' + file_path + ' did not match expectations,' +
-                                                            ' fix the problem or delete the file.')
-    return data
+    with open(file_path, 'r') as data_file:
+        try:
+            return json.load(data_file)
+        except json.decoder.JSONDecodeError as e:
+            raise RuntimeError('Error parsing the JSON in ' + file_path + ', is it valid JSON?') from e
 
 
-def write_file(containing_directory, filename, data):
-
+def write_json_file(containing_directory: str, filename: str, data):
     ensure_directory_exists(containing_directory)
-
     file_path = os.path.join(containing_directory, filename)
     with open(file_path, 'w') as data_file:
         json.dump(data, data_file)
@@ -98,33 +63,33 @@ def write_file(containing_directory, filename, data):
 
 """ END FILE OPERATIONS """
 
-
 """ GENERIC DIALOGS """
 
 
-def warning_popup(window, first, second):
+def warning_popup(window: Gtk.Window, first: str, second: str) -> None:
     warning = Gtk.MessageDialog(window, 0, Gtk.MessageType.WARNING, Gtk.ButtonsType.OK, first)
     warning.format_secondary_text(second)
     warning.run()
     warning.destroy()
 
 
-def decision_popup(window, first, second):
+def decision_popup(window: Gtk.Window, first: str, second: str) -> bool:
     decision = Gtk.MessageDialog(window, 0, Gtk.MessageType.WARNING, Gtk.ButtonsType.OK_CANCEL, first)
     decision.format_secondary_text(second)
     response = decision.run()
     decision.destroy()
-
-    if response == Gtk.ResponseType.OK:
-        return True
-    else:
-        return False
+    return response == Gtk.ResponseType.OK
 
 
 """ END GENERIC DIALOGS """
 
 
-def make_button(theme_icon_string=None, backup_icon_string=None, signal=None, function=None, tooltip_text=None):
+def make_button(
+        theme_icon_string: str = None,
+        backup_icon_string: str = None,
+        signal: str = None,
+        signal_func: Callable = None,
+        tooltip: str = None) -> Gtk.Button:
     button = Gtk.Button()
 
     if theme_icon_string:
@@ -136,17 +101,17 @@ def make_button(theme_icon_string=None, backup_icon_string=None, signal=None, fu
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         button.add(image)
 
-    if signal and function:
-        button.connect(signal, function)
+    if signal and signal_func:
+        button.connect(signal, signal_func)
 
-    if tooltip_text:
-        button.set_tooltip_text(tooltip_text)
+    if tooltip:
+        button.set_tooltip_text(tooltip)
 
     return button
 
 
-def string_to_RGBA(rgba_string):
-            rgba = Gdk.RGBA()
-            if not rgba.parse(rgba_string):
-                raise RuntimeError('RGBA parsing error when parsing ' + rgba_string)
-            return rgba
+def string_to_RGBA(color_text: str) -> Gdk.RGBA:
+    rgba = Gdk.RGBA()
+    if not rgba.parse(color_text):
+        raise RuntimeError('RGBA parsing error when parsing ' + color_text)
+    return rgba
