@@ -20,7 +20,7 @@
 
 import asyncio
 from threading import Thread
-from typing import Awaitable, Union
+from typing import Awaitable, Tuple, Union
 
 import aiohttp
 import feedparser
@@ -28,17 +28,20 @@ from aiohttp import ClientSession
 from newspaper import fulltext
 
 from feed import Feed
+import gi
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gdk, GLib
 from item import Item
 from newsStore import NewsStore
 
 
 class Gatherer(Thread):
     def __init__(self, store: NewsStore):
+        super().__init__(target=self.work_loop, daemon=True)
         self.loop = asyncio.new_event_loop()
         self.session = aiohttp.ClientSession(loop=self.loop)
         self.store = store
-        super().__init__(target=self.work_loop, daemon=True)
-        super().start()
+        self.start()
 
     def work_loop(self) -> None:
         asyncio.set_event_loop(self.loop)
@@ -61,21 +64,28 @@ class Gatherer(Thread):
             await self.service(request, session, response_text)
 
     async def service(self, request: Union[Feed, Item], session: ClientSession, response_text: str) -> None:
-        if isinstance(request, Item):
-            self.service_item(request, response_text)
-        elif isinstance(request, Feed):
+        if isinstance(request, Feed):
             await self.service_feed(request, session, response_text)
+        elif isinstance(request, Item):
+            self.service_item(request, response_text)
         else:
             raise ValueError('Unknown request sent to Gatherer.')
 
-    def service_item(self, item: Item, html: str) -> None:
-        item.article = fulltext(html)
-        self.store.append(item)
-
-    async def service_feed(self, feed: Feed, session: ClientSession, feed_xml: str) -> None:
+    async def service_feed(self, feed: Feed, session: ClientSession, feed_xml: str) -> Awaitable:
         content = feedparser.parse(feed_xml)
         items = []
         for entry in content['entries']:
             items.append(
                 Item(feed.name, entry['link'], entry['title']))
-        await self.batch_requests(items, session)
+        return self.batch_requests(items, session)
+
+    def service_item(self, item: Item, html: str) -> None:
+        item.article = fulltext(html)
+        Gdk.threads_add_idle(GLib.PRIORITY_DEFAULT_IDLE, self.main_thread_add_item_to_store, (self.store, item))
+
+    @staticmethod
+    def main_thread_add_item_to_store(arg_tuple: Tuple[NewsStore, Item]) -> bool:
+        """ Needed due to GTK thread safety """
+        store, item = arg_tuple
+        store.append(item)
+        return False  # Discard this event after we are done

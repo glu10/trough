@@ -65,15 +65,14 @@ class Preferences:
 
         return {
             'View': 'Three-Pane',
-            'Category Font': '10 Sans, sans-serif',
-            'Headline Font': '10 Sans, sans-serif',
-            'Story Font': '10 Sans, sans-serif',
+            'Category Font': '10px Sans, sans-serif',
+            'Headline Font': '10px Sans, sans-serif',
+            'Story Font': '10px Sans, sans-serif',
             'Font Color': '#000000',  # solid black
             'Background Color': '#ffffff',  # solid white
             'Selection Font Color': '#ffffff',  # solid white
             'Selection Background Color': '#517ead',  # medium-dark blue
             'Read Color': '#75507b',  # a 'clicked-link' purple
-            'Filtered Color': '#c02f1d',  # a dull uninviting red
         }
 
     @staticmethod
@@ -139,22 +138,29 @@ class Preferences:
     def get_appearance_css(self) -> bytes:
         ap = self.appearance_preferences()
         css = (
-            '#storyview text, #labelview, #headlineview{\n'
-            '   background-color: ' + ap['Background Color'] + ';\n'
-            '   color: ' + ap['Font Color'] + ';\n'
-            '}\n'
-            '* + #labelview, * + #headlineview{\n'
-            '   background-color: ' + ap['Background Color'] + ';\n'
-            '}\n'
-            '#storyview selection, #labelview:selected, #headlineview:selected{\n'
-            '    background-color: ' + ap['Selection Background Color'] + ';\n'
-            '    color: ' + ap['Selection Font Color'] + ';\n'
-            '}\n'
-            '#storyview {'
-            '    font: ' + ap['Story Font'] + ';\n'
-            '}\n'
-            '#headlineview {\n'
-            '    font: ' + ap['Headline Font'] + ';\n'
-            '}\n'
+            '#storyview text, #labelview, #headlineview {{\n'
+            '   background-color: {0};\n'
+            '   color: {1};\n'
+            '}}\n'
+            '* + #labelview, * + #headlineview {{\n'
+            '   background-color: {0};\n'
+            '}}\n'
+            '#storyview selection, #labelview:selected, #headlineview:selected {{\n'
+            '    background-color: {2};\n'
+            '    color: {3};\n'
+            '}}\n'
+            '#storyview {{'
+            '    font: {4};\n'
+            '}}\n'
+            '#headlineview {{\n'
+            '    font: {5};\n'
+            '}}\n'
+        ).format(
+            ap['Background Color'],
+            ap['Font Color'],
+            ap['Selection Background Color'],
+            ap['Selection Font Color'],
+            ap['Story Font'],
+            ap['Headline Font'],
         )
         return css.encode()

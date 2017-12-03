@@ -173,7 +173,8 @@ class UriDialogRow(DialogRow):
         if not uri:
             return False  # A blank URI is always incorrect
         elif not (uri.startswith('/') or uri.startswith('http://') or uri.startswith('https://')):
-            uri = 'http://' + uri  # Attempt to complete the URI #TODO: Instead of preemptively trying to fix it, probe it as is first.
+            # TODO: Instead of preemptively trying to fix it, probe it as is first.
+            uri = 'http://' + uri  # Attempt to complete the URI
         content = feedparser.parse(uri)  # Probe the URI
         if not content:
             warnings.append('The URI ' + uri + ' did not contain a valid RSS feed.')

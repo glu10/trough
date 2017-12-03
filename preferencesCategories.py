@@ -110,19 +110,26 @@ class PreferencesCategory(metaclass=ABCMeta):
         to label an individual item in a class of selections
         """
         label = Gtk.Label(text)
-        label.set_alignment(0, .5)
-        label.set_padding(5, 0)
+        label.set_halign(Gtk.Align.END)
+        label.set_margin_end(20)
         return label
 
 
 class AppearancePreferences(PreferencesCategory):
     """
     Views
-        (Two-Pane/Three-Pane)
+     - Two-Pane
+     - Three-Pane
     Fonts
-        (Category/Headline/Story)
+     - Category
+     - Headline
+     - Story
     Colors
-       (Font Color/Background Color/Selection Color/Selection Background Color)
+     - Font Color
+     - Background Color
+     - Selection Font Color
+     - Selection Background Color
+     - Read Color
     Reset to Defaults Button
     """
 
@@ -133,7 +140,7 @@ class AppearancePreferences(PreferencesCategory):
         self.view_box = None
 
         self.font_idents = ['Category Font', 'Headline Font', 'Story Font']
-        self.font_buttons = map(self.font_button, self.font_idents)
+        self.font_buttons = [self.font_button(i) for i in self.font_idents]
 
         self.color_idents = [
             'Font Color',
@@ -141,8 +148,8 @@ class AppearancePreferences(PreferencesCategory):
             'Selection Font Color',
             'Selection Background Color',
             'Read Color',
-            'Filtered Color']
-        self.color_buttons = map(self.color_button, self.color_idents)
+        ]
+        self.color_buttons = [self.color_button(i) for i in self.color_idents]
 
     def create_display_area(self) -> Gtk.Alignment:
         top_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -177,20 +184,22 @@ class AppearancePreferences(PreferencesCategory):
 
     def font_button(self, font_title: str) -> Gtk.FontButton:
         fb = Gtk.FontButton(title=font_title, font_name=self.css_to_font_name(self.choices[font_title]))
-        fb.connect('font-set', self.font_switched, font_title)
+        fb.set_font_name(self.css_to_font_name(self.choices[font_title]))
+        fb.connect('font-set', self.font_switched)
         return fb
 
-    def font_switched(self, button: Gtk.FontButton, font_name: str) -> None:
-        self.choices[button.get_title()] = self.font_name_to_css(font_name)
+    def font_switched(self, button: Gtk.FontButton) -> None:
+        self.choices[button.get_title()] = self.font_name_to_css(button.get_font_name())
 
     def font_name_to_css(self, font_name: str) -> str:
-        # FIXME: Pango.FontDescription
-        font_title, font_size = font_name.split()
+        font_title, font_size = font_name.replace(',', '').rsplit(maxsplit=1)
         return '{}px {}'.format(font_size, font_title)
 
     def css_to_font_name(self, font_css: str) -> str:
-        font_size, font_title = font_css.split()
-        return '{} {}'.format(font_size[:-2], font_title)
+        font_size, remaining = font_css.split(maxsplit=1)
+        font_size = ''.join(filter(str.isdigit, font_size))  # remove units
+        font_title = remaining.split(', ', maxsplit=1)[0]  # Ignore a font family, if provided
+        return '{} {}'.format(font_title, font_size)
 
     def view_combo_box(self) -> Gtk.ComboBoxText:
         views = ['Two-Pane', 'Three-Pane']
@@ -232,8 +241,7 @@ class AppearancePreferences(PreferencesCategory):
 
             # Set the font buttons to display the default font values
             for fb, fi in zip(self.font_buttons, self.font_idents):
-                fb.set_font_name(self.choices[fi])
-                fb.emit('font_set')
+                fb.set_font_name(self.css_to_font_name(self.choices[fi]))
 
             # Set the color buttons to display the default color values
             for cb, ci in zip(self.color_buttons, self.color_idents):
@@ -442,18 +450,12 @@ class FeedsPreferences(PreferencesCategory):
         return True
 
     def gather_choices(self) -> Dict[str, Feed]:
-        temp = dict()
+        feeds = dict()
 
-        # Create a new feed object dict from the possibly changed information
         for feed in self.feed_list:  # For each feed in our temporary ListStore
-            feed_name = feed[0]
-            feed_uri = feed[1]
-            temp[feed_name] = Feed(feed_name, feed_uri)
-
-            if feed_name in self.choices:
-                if self.choices[feed_name].uri == feed_uri:
-                    temp[feed_name].items = self.choices[feed_name].items
-        return temp
+            name = feed[0]
+            feeds[name] = Feed(name=name, uri=feed[1])
+        return feeds
 
     def clear_cache(self, button: Gtk.Button) -> None:
         first = 'Clear the cache?'

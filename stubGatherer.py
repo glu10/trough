@@ -34,13 +34,22 @@ class StubGatherer:
 
     def __init__(self, store: NewsStore):
         self.store = store
+        lorem = self.__lorem()
+
+        description = lorem.split('\n\n', maxsplit=1)[0]
+
         self.stub_item = \
             Item(
-                'test_feed_name',
-                'test_uri',
-                'test_title',
-                'test_description',
-                'test_article')
+                'Lorem Feed Dolor',
+                'http://127.0.0.1',
+                'Lorem Title Dolor',
+                description,
+                lorem,
+            )
+
+    def __lorem(self) -> str:
+        with open('tests/resources/lorem', 'r') as f:
+            return f.read()
 
     def work_loop(self) -> None:
         pass

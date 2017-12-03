@@ -38,9 +38,9 @@ class PreferencesWindow(Gtk.Dialog):
             'Preferences',
             parent,
             0,
-            (Gtk.STOCK_CANCEL,
+            ('_Cancel',
              Gtk.ResponseType.CANCEL,
-             'Save Changes',
+             '_Save Changes',
              Gtk.ResponseType.OK))
         self.config = config
         self.preferences = config.preferences

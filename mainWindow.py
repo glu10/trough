@@ -27,6 +27,7 @@ from gi.repository import Gdk, GLib, Gtk
 
 from cache import Cache
 from feedDialog import FeedDialog
+from gatherer import Gatherer
 from newsStore import NewsStore
 from newsView import NewsView
 from preferences import Preferences
@@ -47,8 +48,8 @@ class MainWindow(Gtk.Window):
         self.cache = cache
 
         self.news_store = NewsStore()
-        self.gatherer = StubGatherer(self.news_store)
-        # self.gatherer = Gatherer(self.news_store)
+        # self.gatherer = StubGatherer(self.news_store)
+        self.gatherer = Gatherer(self.news_store)
 
         self.connect_signals()
         self.prepare_appearance()
@@ -131,7 +132,7 @@ class MainWindow(Gtk.Window):
         self.css_provider.load_from_data(self.preferences.get_appearance_css())
 
     def create_header(self) -> Gtk.HeaderBar:
-        header_bar = Gtk.HeaderBar(title='Trough', show_close_button=True)
+        header_bar = Gtk.HeaderBar(show_close_button=True)
         header_bar.pack_start(self.create_add_button())
         header_bar.pack_start(self.create_preferences_button())
         header_bar.pack_start(self.create_refresh_button())
@@ -185,12 +186,12 @@ class MainWindow(Gtk.Window):
             1. Take each feed URI and look for current items.
             2. Only scrape item URIs not in cache.
         """
+        '''
         self.news_store.clear()
         self.gatherer.request(None)
         '''
         for feed in self.preferences.feeds().values():
             self.gatherer.request(feed)
-        '''
 
     @staticmethod
     def do_scroll(widget: Gtk.Widget, scroll: Gtk.ScrollType) -> None:

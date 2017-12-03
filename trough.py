@@ -25,8 +25,7 @@ import gi
 
 gi.require_version('Gdk', '3.0')
 gi.require_version('Gtk', '3.0')
-gi.require_version('Gdk', '3.0')
-from gi.repository import Gdk, Gio, GLib, Gtk
+from gi.repository import Gdk, Gio, Gtk
 
 from cache import Cache
 from mainWindow import MainWindow
@@ -59,17 +58,13 @@ class Trough(Gtk.Application):
             self.add_window(self.main_window)
             self.main_window.present()
 
-    def on_quit(self, action, param):
+    def on_quit(self, widget: Gtk.Widget, event: Gdk.Event) -> None:
         self.cache.write_cache()
         self.quit()
 
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL)  # Respond to Ctrl+C
-
-    # These init calls are needed because of multi-threading
-    GLib.threads_init()
-    Gdk.threads_init()
 
     # Start things up
     trough = Trough()

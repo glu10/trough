@@ -32,7 +32,7 @@ class Feed:
     @classmethod
     def from_dict(cls, attributes: Dict[str, Dict[str, str]]):
         """ Deserialization """
-        return Feed(**attributes)
+        return cls(**attributes)
 
     def to_dict(self) -> dict:
         """ Serialization """

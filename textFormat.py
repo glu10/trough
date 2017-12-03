@@ -74,8 +74,8 @@ class TextFormat:
     def article(article: str, text_buffer: Gtk.TextBuffer) -> None:
         if article:
             text_buffer.insert(TextFormat.__pos(text_buffer), '\n')
-            paragraph = text_buffer.create_tag('paragraph', pixels_below_lines=5, pixels_above_lines=5)
-            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), article + '\n', paragraph)
+            paragraph = text_buffer.create_tag('paragraph')
+            text_buffer.insert_with_tags(TextFormat.__pos(text_buffer), '\n' + article + '\n', paragraph)
 
     @staticmethod
     def __pos(text_buffer: Gtk.TextBuffer) -> Gtk.TextIter:

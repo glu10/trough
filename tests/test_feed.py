@@ -19,6 +19,7 @@
 """
 
 from unittest import TestCase
+
 from feed import Feed
 
 
