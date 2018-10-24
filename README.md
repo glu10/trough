@@ -1,14 +1,9 @@
 Trough
 ======
 
-A GTK+ RSS news reader (currently being revived!)
+A GTK+ RSS news reader (moved to a private GitLab repo, will update if status changes)
 
 For now, do not attempt to run this.
-
-## Planned changes in revival:
-* Asynchronous requests.
-* NLP in favor of scraping rules.
-* GUI enhancements.
 
 ## Dependencies
 * Python 3.3+ (3.x < 3.3 may work but is untested)
